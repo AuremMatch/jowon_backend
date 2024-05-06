@@ -12,7 +12,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
-
+from contests.serializers import ContestSerializer
+from contests.models import Contest
 
 from . import serializers
 
@@ -20,18 +21,82 @@ from . import serializers
 class UserViewSet(ModelViewSet):
 
     serializer_class = UserSerializer
-    queryset = models.User.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # 현재 인증된 사용자의 정보만 필터링하여 반환합니다.
+        return models.User.objects.filter(id=self.request.user.id)
+
 
 
 
 class Me(APIView):
 
-   
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        serializer = serializers.UserSerializer(user)
+        serializer = serializers.PrivateUserSerializer(user)
         return Response(serializer.data)
+
+    def put(self, request):
+        user = request.user
+        serializer = serializers.PrivateUserSerializer(
+            user,
+            data=request.data,
+            partial=True,
+        )
+        if serializer.is_valid():
+            user = serializer.save()
+            serializer = serializers.PrivateUserSerializer(user)
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+    
+
+class FavsView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = ContestSerializer(user.favs.all(), many=True).data
+        return Response(serializer)
+
+    def put(self, request):
+        
+        pk = request.data.get("id", None)
+        user = request.user
+        if pk is not None:
+            try:
+                room = Contest.objects.get(pk=pk)
+                if room in user.favs.all():
+                    user.favs.remove(room)
+                else:
+                    user.favs.add(room)
+                return Response()
+            except Contest.DoesNotExist:
+                pass
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    
+    # def post(self, request):
+    #     # POST 요청 처리 코드
+    #     pk = request.data.get("pk", None)
+    #     user = request.user
+    #     if pk is not None:
+    #         try:
+    #             room = Contest.objects.get(pk=pk)
+    #             if room in user.favs.all():
+    #                 user.favs.remove(room)
+    #             else:
+    #                 user.favs.add(room)
+    #             return Response(status=status.HTTP_201_CREATED)
+    #         except Contest.DoesNotExist:
+    #             pass
+    #     return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 
         
 

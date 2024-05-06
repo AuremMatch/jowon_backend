@@ -64,10 +64,12 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
-CORS_ORIGIN_WHITELIST = [
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:3000",
     
-    'http://localhost:3000',  # 예시: React 앱의 개발 서버
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'admin.urls'
 
@@ -143,3 +145,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+
+
+
+CORS_ALLOW_CREDENTIALS = True

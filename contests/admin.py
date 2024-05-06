@@ -2,7 +2,7 @@ from django.contrib import admin
 from . import models
 
 # Register your models here.
-@admin.register(models.JunbukContest, models.KoreaContest, models.WonkangContest, models.Contest)
+@admin.register(models.JunbukContest, models.KoreaContest, models.WonkangContest, models.Contest, models.Like)
 class ContestAdmin(admin.ModelAdmin):
         pass
 
