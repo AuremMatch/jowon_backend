@@ -39,12 +39,14 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'rest_framework.authtoken',
 ]
 
 PROJECT_APPS = [
     "core.apps.CoreConfig",
     "contests.apps.ContestsConfig",
     "users.apps.UsersConfig",
+    "conversations.apps.ConversationsConfig",
 ]
 
 
@@ -60,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -149,3 +152,14 @@ AUTH_USER_MODEL = 'users.User'
 
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+       'rest_framework.authentication.TokenAuthentication',
+       "rest_framework.authentication.SessionAuthentication",
+   ),
+  
+}
+
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000"]
