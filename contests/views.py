@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
 from .models import ContestApplication
 from .serializers import ContestApplicationSerializer
+from users.serializers import UserSerializer
 
 
 
@@ -47,7 +48,14 @@ class FilteredContests(APIView):
 
     def get(self, request):
         department = request.user.연관학과  # 사용자의 학과 정보를 가져옵니다.
+        latest_checked = request.GET.get('latest', False)  # 최신순 여부를 가져옵니다.
         filtered_contests = Contest.objects.filter(연관학과=department)
+        all_contents = Contest.objects.all()
+
+        # 최신순으로 필터링하는 경우
+        if latest_checked:
+            filtered_contests = all_contents.order_by('-id')  # created_at 필드를 기준으로 최신순으로 정렬합니다.
+
         serializer = ContestSerializer(filtered_contests, many=True)
         return Response(serializer.data)
 
@@ -88,3 +96,13 @@ class ContestApplicationViewSet(ModelViewSet):
 
     
 
+class ContestViewSet(ModelViewSet):
+    queryset = Contest.objects.all()
+    serializer_class = ContestSerializer  # Contest 모델의 시리얼라이저가 필요합니다.
+
+    @action(detail=True, methods=['get'])
+    def applicants(self, request, pk=None):
+        contest = self.get_object()
+        applicants = contest.apply.all()  # 역참조를 사용하여 신청한 유저들 가져오기
+        serializer = UserSerializer(applicants, many=True)
+        return Response(serializer.data)

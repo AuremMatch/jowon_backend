@@ -22,7 +22,7 @@ class User(AbstractUser):
     깃주소 = models.URLField(blank=True, null=True)  # 깃허브 주소
     포토폴리오링크 = models.URLField(blank=True, null=True)  # 포트폴리오 링크
     연관학과 = models.CharField(max_length=100)  # 학과
-   
+    avatar = models.URLField(blank=True)
 
     favs = models.ManyToManyField("contests.Contest", related_name="favs")
 

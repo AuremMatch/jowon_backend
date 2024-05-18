@@ -1,5 +1,6 @@
 from django.db import models
 from users.models import User
+from core.models import TimeStampedModel
 
 
 # Create your models here.
@@ -51,7 +52,7 @@ class WonkangContest(models.Model):
         return self.title
 
 
-class Contest(models.Model):
+class Contest(TimeStampedModel):
 
     번호 = models.IntegerField(null=True)  # 번호
     제목 = models.CharField(max_length=255, null=True)  # 제목
