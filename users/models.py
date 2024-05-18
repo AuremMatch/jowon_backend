@@ -26,4 +26,7 @@ class User(AbstractUser):
 
     favs = models.ManyToManyField("contests.Contest", related_name="favs")
 
+    apply = models.ManyToManyField("contests.Contest", related_name="apply")
+
+
    

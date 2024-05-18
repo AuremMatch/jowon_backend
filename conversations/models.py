@@ -9,6 +9,8 @@ class Conversation(core_models.TimeStampedModel):
     
     participants = models.ManyToManyField("users.User", blank=True)
 
+
+
     def __str__(self):
         return str(self.created)
 
@@ -18,12 +20,12 @@ class Message(core_models.TimeStampedModel):
     """ Message Model Definition """
 
     message = models.TextField()
-    contestName = models.CharField(max_length=200, blank=True)
+   
     user = models.ForeignKey("users.User", on_delete=models.CASCADE)
-    participants = models.ManyToManyField("users.User", blank=True, related_name="hello")
-    conversation = models.ForeignKey("Conversation", on_delete=models.CASCADE)  # 필드 이름을 conversation_id로 변경
-    text = models.TextField()  # 이 부분이 추가된 것입니다.
+  
+    conversation = models.ForeignKey("Conversation", on_delete=models.CASCADE , related_name="messages")  # 필드 이름을 conversation_id로 변경
+   
    
     
     def __str__(self):
-        return f"{self.user} says: {self.text}"
+        return f"{self.user} says: {self.message}"

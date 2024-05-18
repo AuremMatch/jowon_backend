@@ -14,6 +14,9 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from contests.serializers import ContestSerializer
 from contests.models import Contest
+from ratings.models import Rating
+from django.db.models import Avg
+from .serializers import PrivateUserSerializer
 
 from . import serializers
 
@@ -31,24 +34,23 @@ class UserViewSet(ModelViewSet):
 
 
 class Me(APIView):
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-        serializer = serializers.PrivateUserSerializer(user)
+        serializer = PrivateUserSerializer(user)  # PrivateUserSerializer 사용
         return Response(serializer.data)
 
     def put(self, request):
         user = request.user
-        serializer = serializers.PrivateUserSerializer(
+        serializer = PrivateUserSerializer(
             user,
             data=request.data,
             partial=True,
         )
         if serializer.is_valid():
             user = serializer.save()
-            serializer = serializers.PrivateUserSerializer(user)
+            serializer = PrivateUserSerializer(user)
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
@@ -74,6 +76,32 @@ class FavsView(APIView):
                     user.favs.remove(room)
                 else:
                     user.favs.add(room)
+                return Response()
+            except Contest.DoesNotExist:
+                pass
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+
+class ApplyView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = ContestSerializer(user.apply.all(), many=True).data
+        return Response(serializer)
+
+    def put(self, request):
+        
+        pk = request.data.get("id", None)
+        user = request.user
+        if pk is not None:
+            try:
+                room = Contest.objects.get(pk=pk)
+                if room in user.apply.all():
+                    user.apply.remove(room)
+                else:
+                    user.apply.add(room)
                 return Response()
             except Contest.DoesNotExist:
                 pass

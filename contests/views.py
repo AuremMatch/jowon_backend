@@ -11,6 +11,9 @@ from rest_framework.decorators import action
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics
+from .models import ContestApplication
+from .serializers import ContestApplicationSerializer
+
 
 
 class CategoryViewSet(ModelViewSet):
@@ -61,3 +64,27 @@ class LikeViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+class ContestApplicationViewSet(ModelViewSet):
+    serializer_class = ContestApplicationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        contest_id = self.request.query_params.get('contest_id', None)
+        if contest_id:
+            return ContestApplication.objects.filter(contest__id=contest_id)
+        return ContestApplication.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+    
+    def list(self, request):
+        contest_id = self.request.query_params.get('contest_id', None)
+        queryset = ContestApplication.objects.filter(contest__id=contest_id)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+
+
+    
+

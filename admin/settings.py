@@ -47,6 +47,7 @@ PROJECT_APPS = [
     "contests.apps.ContestsConfig",
     "users.apps.UsersConfig",
     "conversations.apps.ConversationsConfig",
+    "ratings.apps.RatingsConfig",
 ]
 
 
@@ -163,3 +164,5 @@ REST_FRAMEWORK = {
 }
 
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000"]
+
+APPEND_SLASH = False

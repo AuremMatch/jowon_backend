@@ -67,6 +67,15 @@ class Contest(models.Model):
         return self.제목
 
 
+
+class ContestApplication(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    contest = models.ForeignKey(Contest, on_delete=models.CASCADE)
+    applied_at = models.DateTimeField(auto_now_add=True)
+
+
+
+
 class Like(models.Model):
     user = models.ForeignKey(User , on_delete=models.CASCADE)
     contest = models.ForeignKey(Contest, on_delete=models.CASCADE)
