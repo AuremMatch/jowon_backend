@@ -5,5 +5,5 @@ from .views import RatingViewSet
 
 
 urlpatterns = [
-    path('', RatingViewSet.as_view({'get': 'list'}), name='conversation-list'),
+    path('', RatingViewSet.as_view({'get': 'list', 'post': 'create'}), name='conversation-list'),
 ]

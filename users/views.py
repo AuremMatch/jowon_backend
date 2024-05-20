@@ -23,12 +23,9 @@ from . import serializers
 
 class UserViewSet(ModelViewSet):
 
-    serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        # 현재 인증된 사용자의 정보만 필터링하여 반환합니다.
-        return models.User.objects.filter(id=self.request.user.id)
+    queryset = models.User.objects.all()
+    serializer_class = PrivateUserSerializer
+    
 
 
 

@@ -8,6 +8,10 @@ class RatingSerializer(serializers.ModelSerializer):
         read_only_fields = ['rater', 'created_at']
 
     def validate(self, data):
-        if data['rater'] == data['ratee']:
+        rater = data.get('rater')
+        ratee = data.get('ratee')
+        
+        if rater and ratee and rater == ratee:
             raise serializers.ValidationError("You cannot rate yourself.")
+        
         return data
