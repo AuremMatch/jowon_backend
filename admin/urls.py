@@ -24,4 +24,5 @@ urlpatterns = [
     path("conversations/", include("conversations.urls")),
     path("notifications/", include("notifications.urls")),
     path("ratings/", include("ratings.urls")),
+    path("survey/", include("survey.urls")),
 ]

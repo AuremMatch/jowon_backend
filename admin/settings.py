@@ -49,6 +49,7 @@ PROJECT_APPS = [
     "conversations.apps.ConversationsConfig",
     "ratings.apps.RatingsConfig",
     "notifications.apps.NotificationsConfig",
+    "survey.apps.SurveyConfig"
 ]
 
 
@@ -161,6 +162,8 @@ REST_FRAMEWORK = {
        'rest_framework.authentication.TokenAuthentication',
        "rest_framework.authentication.SessionAuthentication",
    ),
+   'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+   'PAGE_SIZE': 9,  # 기본 페이지 사이즈를 8로 설정
   
 }
 

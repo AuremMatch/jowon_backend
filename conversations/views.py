@@ -16,12 +16,40 @@ from .serializers import MessageSerializer
 from rest_framework import viewsets
 from .models import Message
 from django.shortcuts import get_object_or_404
+from contests.views import ContestViewSet
+from contests.models import Contest
+import requests
 
 class ConversationViewSet(ModelViewSet):
-
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all()
-    permission_classes = [AllowAny]  # 모든 사용자에게 권한을 부여
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        contest_id = 1
+        if not contest_id:
+            return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Contest의 참가자 리스트를 가져오기 위해 HTTP 요청을 보냄
+        url = f'http://127.0.0.1:8000/contests/1/applicants/'
+        response = requests.get(url)
+        if response.status_code != 200:
+            return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)
+        
+        applicants = response.json()
+        user_ids = [applicant['id'] for applicant in applicants]
+        
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        conversation = serializer.save()
+
+        conversation.participants.set(user_ids)
+        conversation.save()
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    
     
 
 
@@ -33,9 +61,6 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
        
-        
-        
-
      
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():

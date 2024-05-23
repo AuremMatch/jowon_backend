@@ -4,7 +4,6 @@ from users.serializers import UserSerializer
 
 
 
-
 class MessageSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 

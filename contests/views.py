@@ -14,34 +14,48 @@ from rest_framework import generics
 from .models import ContestApplication
 from .serializers import ContestApplicationSerializer
 from users.serializers import UserSerializer
+from conversations.serializers import ConversationSerializer
+import random
+from django.core.paginator import Paginator,PageNotAnInteger, EmptyPage
+from rest_framework.pagination import PageNumberPagination
 
 
 
 class CategoryViewSet(ModelViewSet):
-
     serializer_class = ContestSerializer
     queryset = Contest.objects.all()
+    pagination_class = PageNumberPagination  # 페이지네이션 클래스 설정
+    
 
     @action(detail=False, methods=['get'])
     def filtered_contests(self, request):
         department = request.query_params.get('연관학과')
         if department:
             filtered_contests = self.get_queryset().filter(연관학과=department)
+            page = self.paginate_queryset(filtered_contests)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
             serializer = self.get_serializer(filtered_contests, many=True)
             return Response(serializer.data)
         else:
-            return Response({"error": "Department parameter is missing"}, status=400)
+            return Response({"error": "Department parameter is missing"}, status=HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def search(self, request):
         keyword = request.query_params.get('keyword')
         if keyword:
-            # 제목에 특정 키워드를 포함하는 Contest 객체들을 필터링합니다.
             filtered_contests = Contest.objects.filter(제목__icontains=keyword)
+            page = self.paginate_queryset(filtered_contests)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
             serializer = self.get_serializer(filtered_contests, many=True)
             return Response(serializer.data, status=HTTP_200_OK)
         else:
             return Response({"error": "Keyword parameter is missing"}, status=HTTP_400_BAD_REQUEST)
+        
+
 
 class FilteredContests(APIView):
     permission_classes = [IsAuthenticated]
@@ -92,6 +106,16 @@ class ContestApplicationViewSet(ModelViewSet):
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
+    def create_conversation(self, request):
+        # 지원한 사용자 중에서 무작위로 3명 선택
+        contest_id = request.data.get('contest')
+        applications = ContestApplication.objects.filter(contest_id=contest_id)
+        participants = random.sample(list(applications.values_list('user', flat=True)), 3)
+
+        # 대화 생성
+        conversation_data = {
+            'teamName': 'New Conversation Team',  # 대화 팀 이름 설정
+        }
 
 
     
@@ -106,3 +130,5 @@ class ContestViewSet(ModelViewSet):
         applicants = contest.apply.all()  # 역참조를 사용하여 신청한 유저들 가져오기
         serializer = UserSerializer(applicants, many=True)
         return Response(serializer.data)
+
+    
