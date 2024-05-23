@@ -24,13 +24,16 @@ class ProposalViewSet(viewsets.ModelViewSet):
         return Response({'message': 'Proposal accepted.'})
 
 class NotificationViewSet(viewsets.ModelViewSet):
-    queryset = Notification.objects.all()
+    queryset = Notification.objects.order_by('-created_at')
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
+   
+    pagination_class = None 
 
     def create(self, request, *args, **kwargs):
         # 요청 데이터에서 필요한 정보 추출
         message = request.data.get('message')
+        image = request.data.get('image')  # 이미지 필드 추가
         
         # 필수 필드가 있는지 확인
         if not message:
@@ -43,7 +46,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
             return Response({"error": "User authentication failed"}, status=status.HTTP_401_UNAUTHORIZED)
         
         # Notification 객체 생성
-        notification = Notification.objects.create(user=user, message=message)
+        notification = Notification.objects.create(user=user, message=message, image=image)
         
         # 생성된 Notification 객체를 시리얼라이즈하여 응답
         serializer = self.get_serializer(notification)

@@ -24,6 +24,8 @@ class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all()
     permission_classes = [AllowAny]
+    pagination_class = None 
+    
 
     def create(self, request, *args, **kwargs):
         contest_id = 1
@@ -58,6 +60,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
+    pagination_class = None 
 
     def create(self, request, *args, **kwargs):
        

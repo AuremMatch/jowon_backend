@@ -28,8 +28,6 @@ class UserViewSet(ModelViewSet):
     
 
 
-
-
 class Me(APIView):
     permission_classes = [IsAuthenticated]
 
