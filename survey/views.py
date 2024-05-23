@@ -12,6 +12,7 @@ class ResponseViewSet(viewsets.ModelViewSet):
     queryset = Response.objects.all()
     serializer_class = ResponseSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def perform_create(self, serializer):
         serializer.save(respondent=self.request.user)

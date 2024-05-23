@@ -18,6 +18,7 @@ from conversations.serializers import ConversationSerializer
 import random
 from django.core.paginator import Paginator,PageNotAnInteger, EmptyPage
 from rest_framework.pagination import PageNumberPagination
+import re
 
 
 
@@ -46,10 +47,6 @@ class CategoryViewSet(ModelViewSet):
         keyword = request.query_params.get('keyword')
         if keyword:
             filtered_contests = Contest.objects.filter(제목__icontains=keyword)
-            page = self.paginate_queryset(filtered_contests)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
             serializer = self.get_serializer(filtered_contests, many=True)
             return Response(serializer.data, status=HTTP_200_OK)
         else:
@@ -65,10 +62,16 @@ class FilteredContests(APIView):
         latest_checked = request.GET.get('latest', False)  # 최신순 여부를 가져옵니다.
         filtered_contests = Contest.objects.filter(연관학과=department)
         all_contents = Contest.objects.all()
+        prize_checked = request.GET.get('prize', False)  # 상금순 여부를 가져옵니다.
 
         # 최신순으로 필터링하는 경우
         if latest_checked:
             filtered_contests = all_contents.order_by('-id')  # created_at 필드를 기준으로 최신순으로 정렬합니다.
+        
+
+        if prize_checked:
+            # 상금이 숫자로만 이루어진 경우만 필터링하고 상금 크기순으로 정렬
+            filtered_contests = all_contents.order_by('-상금')
 
         serializer = ContestSerializer(filtered_contests, many=True)
         return Response(serializer.data)
