@@ -1,10 +1,13 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Score
 from django.db.models import Avg
 from ratings.models import Rating
 from ratings.serializers import RatingSerializer
 from notifications.models import Notification
 from notifications.serializers import NotificationSerializer
+
+
+from .models import Score
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -13,11 +16,17 @@ class UserSerializer(serializers.ModelSerializer):
             "password",
            
         )
+
+class ScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Score
+        fields = '__all__'
         
 class PrivateUserSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
     ratings_received = serializers.SerializerMethodField()
     notifications = serializers.SerializerMethodField()
+    score = ScoreSerializer(read_only=True)  # ScoreSerializer 추가
 
     class Meta:
         model = User
@@ -29,6 +38,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
             "is_active",
             "groups",
             "user_permissions",
+           
         )
 
     def get_average_rating(self, obj):
@@ -47,5 +57,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
         # 사용자의 모든 Notification을 가져옵니다.
         notifications = Notification.objects.filter(user=obj)
         return NotificationSerializer(notifications, many=True).data
+
+
 
 

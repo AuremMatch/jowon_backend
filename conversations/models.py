@@ -9,6 +9,10 @@ class Conversation(core_models.TimeStampedModel):
     
     participants = models.ManyToManyField("users.User", blank=True)
 
+    selected_choices = models.JSONField(default=list, blank=True)  # JSON 필드 추가
+
+    
+
 
     def __str__(self):
         return str(self.created)

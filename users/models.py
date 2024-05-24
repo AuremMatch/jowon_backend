@@ -29,4 +29,15 @@ class User(AbstractUser):
     apply = models.ManyToManyField("contests.Contest", related_name="apply")
 
 
-   
+class Score(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='score')  # 외래 키로 User 모델과 연결
+    grade = models.FloatField(null=True)  # 학점 (실수형)
+    depart = models.IntegerField(null=True)  # 학과 (정수형)
+    credit = models.IntegerField(null=True)  # 학점 (정수형)
+    in_school_award_cnt = models.IntegerField(null=True)  # 교내 수상 횟수 (정수형)
+    out_school_award_cnt = models.IntegerField(null=True)  # 교외 수상 횟수 (정수형)
+    national_competition_award_cnt = models.IntegerField(null=True)  # 국가대회 수상 횟수 (정수형)
+    certificate = models.IntegerField(null=True)  # 자격증 보유 여부 (정수형)
+    subject = models.IntegerField(null=True)  # 과목 (정수형)
+    major_field = models.IntegerField(null=True)  # 전공 분야 (정수형)
+    codingTest_score = models.IntegerField(null=True)  # 코딩 테스트 점수 (정수형)
