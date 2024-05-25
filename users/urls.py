@@ -32,4 +32,6 @@ urlpatterns = [
             }
         ),
     ),
+
+    path('update-selected-choices/', views.UpdateSelectedChoicesView.as_view(), name='update-selected-choices'),
 ]

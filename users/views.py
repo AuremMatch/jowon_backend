@@ -216,3 +216,23 @@ class SignUp(APIView):
             return Response({"error": "Failed to authenticate user"})
         
 
+class UpdateSelectedChoicesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, *args, **kwargs):
+        user = request.user
+        selected_choices = request.data.get('selected_choices', [])
+        
+        if not isinstance(selected_choices, list):
+            return Response({'error': 'selected_choices must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.selected_choices = selected_choices
+        user.save()
+
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

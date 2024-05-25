@@ -28,6 +28,9 @@ class User(AbstractUser):
 
     apply = models.ManyToManyField("contests.Contest", related_name="apply")
 
+     # JSON 필드 추가
+    selected_choices = models.JSONField(default=list, blank=True)
+
 
 class Score(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='score')  # 외래 키로 User 모델과 연결
