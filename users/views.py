@@ -18,6 +18,7 @@ from ratings.models import Rating
 from django.db.models import Avg
 from .serializers import PrivateUserSerializer
 
+
 from . import serializers
 
 
@@ -236,3 +237,5 @@ class UpdateSelectedChoicesView(APIView):
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+

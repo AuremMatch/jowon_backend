@@ -28,12 +28,12 @@ class ConversationViewSet(ModelViewSet):
     
 
     def create(self, request, *args, **kwargs):
-        contest_id = 1
+        contest_id = request.data.get('contest_id')
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Contest의 참가자 리스트를 가져오기 위해 HTTP 요청을 보냄
-        url = f'http://127.0.0.1:8000/contests/1/applicants/'
+        url = f'http://127.0.0.1:8000/contests/${contest_id}/applicants/'
         response = requests.get(url)
         if response.status_code != 200:
             return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)

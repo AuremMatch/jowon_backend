@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Score
+from .models import User, Score, UserContestChoices
 from django.db.models import Avg
 from ratings.models import Rating
 from ratings.serializers import RatingSerializer
@@ -7,9 +7,17 @@ from notifications.models import Notification
 from notifications.serializers import NotificationSerializer
 
 
+
 from .models import Score
 
+
+class ScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Score
+        fields = '__all__'
+
 class UserSerializer(serializers.ModelSerializer):
+    score = ScoreSerializer(read_only=True)  # ScoreSerializer 추가
     class Meta:
         model = User
         exclude = (
@@ -17,10 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
            
         )
 
-class ScoreSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Score
-        fields = '__all__'
+
         
 class PrivateUserSerializer(serializers.ModelSerializer):
     average_rating = serializers.SerializerMethodField()
@@ -61,3 +66,7 @@ class PrivateUserSerializer(serializers.ModelSerializer):
 
 
 
+class UserContestChoicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserContestChoices
+        fields = '__all__'

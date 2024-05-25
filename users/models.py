@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+
 class User(AbstractUser):
   
     이름 = models.CharField(max_length=100)  # 이름
@@ -44,3 +45,10 @@ class Score(models.Model):
     subject = models.IntegerField(null=True)  # 과목 (정수형)
     major_field = models.IntegerField(null=True)  # 전공 분야 (정수형)
     codingTest_score = models.IntegerField(null=True)  # 코딩 테스트 점수 (정수형)
+
+
+
+class UserContestChoices(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    contest = models.ForeignKey("contests.Contest", on_delete=models.CASCADE)
+    selected_choices = models.JSONField(default=list)
