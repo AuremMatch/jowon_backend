@@ -22,18 +22,19 @@ import requests
 
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
-    queryset = Conversation.objects.all()
+    queryset = Conversation.objects.all().order_by('-created')
     permission_classes = [AllowAny]
     pagination_class = None 
-    
 
     def create(self, request, *args, **kwargs):
         contest_id = request.data.get('contest_id')
+        image_url = request.data.get('image')
+        
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Contest의 참가자 리스트를 가져오기 위해 HTTP 요청을 보냄
-        url = f'http://127.0.0.1:8000/contests/${contest_id}/applicants/'
+        url = f'http://127.0.0.1:8000/contests/{contest_id}/applicants/'
         response = requests.get(url)
         if response.status_code != 200:
             return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)
@@ -41,7 +42,12 @@ class ConversationViewSet(ModelViewSet):
         applicants = response.json()
         user_ids = [applicant['id'] for applicant in applicants]
         
-        serializer = self.get_serializer(data=request.data)
+        # `data`에 `image` URL을 추가하여 serializer에 전달
+        data = request.data.copy()
+        if image_url:
+            data['image'] = image_url
+        
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         conversation = serializer.save()
 

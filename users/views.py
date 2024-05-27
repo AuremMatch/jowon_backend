@@ -190,31 +190,29 @@ class LogOut(APIView):
         logout(request)
         return Response({"ok": "bye!"})
     
-class SignUp(APIView):
-    def post(self, request):
-        username = request.data.get("username")
-        password = request.data.get("password")
-        
-        # 필수 필드인지 확인하고 누락된 경우 ParseError 발생
-        if not username or not password:
-            raise ParseError
-        
-        # 새로운 사용자 생성
-        user = models.User.objects.create_user(username=username, password=password)
-        
-        # 사용자 인증
-        user = authenticate(
-            request,
-            username=username,
-            password=password,
-        )
-        
-        # 로그인 처리
-        if user:
-            login(request, user)
-            return Response({"ok": "Welcome!"})
+class SignUpViewSet(ModelViewSet):
+    queryset = models.User.objects.all()
+    serializer_class = serializers.SignUpSerializer
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # 사용자 인증
+            user = authenticate(
+                request,
+                username=request.data['username'],
+                password=request.data['password'],
+            )
+            
+            # 로그인 처리
+            if user:
+                login(request, user)
+                return Response({"ok": "Welcome!"}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({"error": "Failed to authenticate user"}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            return Response({"error": "Failed to authenticate user"})
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
 
 class UpdateSelectedChoicesView(APIView):
@@ -228,12 +226,31 @@ class UpdateSelectedChoicesView(APIView):
     def put(self, request, *args, **kwargs):
         user = request.user
         selected_choices = request.data.get('selected_choices', [])
+        contest_id = request.data.get('contest_id')
         
         if not isinstance(selected_choices, list):
             return Response({'error': 'selected_choices must be a list'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user.selected_choices = selected_choices
-        user.save()
+         # selected_choices 유효성 검사
+        if not isinstance(selected_choices, list):
+            return Response({'error': 'selected_choices must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        # contest_id 유효성 검사
+        if not contest_id:
+            return Response({'error': 'contest_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        # contest_id가 실제로 존재하는지 확인
+        try:
+            contest = Contest.objects.get(id=contest_id)
+        except Contest.DoesNotExist:
+            return Response({'error': 'Contest does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+        # UserContestChoices 객체를 찾거나 생성
+        user_contest_choice, created = models.UserContestChoices.objects.get_or_create(user=user, contest=contest)
+        user_contest_choice.selected_choices = selected_choices
+        user_contest_choice.save()
 
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)

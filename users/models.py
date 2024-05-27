@@ -18,6 +18,7 @@ class User(AbstractUser):
     예상상금 = models.IntegerField(default=0)  # 예상 상금
 
     개발경력 = models.TextField(blank=True, null=True)  # 개발 경력
+    자기소개 = models.TextField(blank=True, null=True)
     # 회원가입 시 빼기
 
     깃주소 = models.URLField(blank=True, null=True)  # 깃허브 주소

@@ -5,9 +5,7 @@ from ratings.models import Rating
 from ratings.serializers import RatingSerializer
 from notifications.models import Notification
 from notifications.serializers import NotificationSerializer
-
-
-
+from contests.serializers import ContestSerializer
 from .models import Score
 
 
@@ -16,15 +14,47 @@ class ScoreSerializer(serializers.ModelSerializer):
         model = Score
         fields = '__all__'
 
+
+class UserContestChoicesSerializer(serializers.ModelSerializer):
+    contest = ContestSerializer()
+    class Meta:
+        model = UserContestChoices
+        fields = ['contest', 'selected_choices']
+
 class UserSerializer(serializers.ModelSerializer):
     score = ScoreSerializer(read_only=True)  # ScoreSerializer 추가
+    choices_by_contest = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         exclude = (
             "password",
            
         )
+    def get_choices_by_contest(self, obj):
+        user_choices = UserContestChoices.objects.filter(user=obj)
+        return UserContestChoicesSerializer(user_choices, many=True).data
+    
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password']
+        )
+        return user
 
+
+class SignUpSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'password']
+        extra_kwargs = {'password': {'write_only': True}}  # password 필드를 읽기 전용으로 설정합니다.
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            password=validated_data['password']
+        )
+        return user
 
         
 class PrivateUserSerializer(serializers.ModelSerializer):
@@ -66,7 +96,3 @@ class PrivateUserSerializer(serializers.ModelSerializer):
 
 
 
-class UserContestChoicesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserContestChoices
-        fields = '__all__'

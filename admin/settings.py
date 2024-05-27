@@ -49,7 +49,8 @@ PROJECT_APPS = [
     "conversations.apps.ConversationsConfig",
     "ratings.apps.RatingsConfig",
     "notifications.apps.NotificationsConfig",
-    "survey.apps.SurveyConfig"
+    "survey.apps.SurveyConfig",
+    "predictor.apps.PredictorConfig"
 ]
 
 

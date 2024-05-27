@@ -11,7 +11,8 @@ urlpatterns = [
     path("change-password", views.ChangePassword.as_view()),
     path("log-in", views.LogIn.as_view()),
     path("log-out", views.LogOut.as_view()),
-    path('signup/', views.SignUp.as_view(), name='signup'),
+    path('signup/', views.SignUpViewSet.as_view({'post': 'create'}), name='signup'),
+
     path("@<str:username>", views.PublicUser.as_view()),
     path(
         "",

@@ -11,6 +11,7 @@ class Conversation(core_models.TimeStampedModel):
 
     selected_choices = models.JSONField(default=list, blank=True)  # JSON 필드 추가
 
+    image = models.URLField(max_length=500,null=True)  # 사진 (URL 형식)
     
 
 

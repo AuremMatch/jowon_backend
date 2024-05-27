@@ -25,4 +25,5 @@ urlpatterns = [
     path("notifications/", include("notifications.urls")),
     path("ratings/", include("ratings.urls")),
     path("survey/", include("survey.urls")),
+    path("predictor/", include("predictor.urls")),
 ]

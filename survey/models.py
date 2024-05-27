@@ -19,7 +19,6 @@ class Question(models.Model):
         return self.text
 
 
-
 class Response(models.Model):
     survey = models.ForeignKey(Survey, related_name='responses', on_delete=models.CASCADE)
     question = models.ForeignKey(Question, related_name='responses', on_delete=models.CASCADE)

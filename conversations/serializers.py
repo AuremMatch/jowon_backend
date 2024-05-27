@@ -15,7 +15,7 @@ class MessageSerializer(serializers.ModelSerializer):
 class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
     messages = MessageSerializer(many=True, read_only=True)  # Conversation에 연결된 모든 Message를 시리얼라이즈하는 부분
-
+    
     class Meta:
         model = Conversation
-        fields = ['id', 'teamName', 'participants', 'messages', 'selected_choices']
+        fields =  '__all__'
