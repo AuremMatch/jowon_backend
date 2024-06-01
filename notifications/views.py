@@ -7,6 +7,9 @@ from django.contrib.auth.models import User
 from .models import Proposal, Notification
 from .serializers import ProposalSerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+
+from conversations.models import Conversation
 
 class ProposalViewSet(viewsets.ModelViewSet):
     queryset = Proposal.objects.all()
@@ -35,6 +38,8 @@ class NotificationViewSet(viewsets.ModelViewSet):
         message = request.data.get('message')
         image = request.data.get('image')  # 이미지 필드 추가
         
+        conversation_id = request.data.get('conversation_id')  # conversation_id 필드 추가
+        
         # 필수 필드가 있는지 확인
         if not message:
             return Response({"error": "Message field is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -45,9 +50,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
         except AttributeError:
             return Response({"error": "User authentication failed"}, status=status.HTTP_401_UNAUTHORIZED)
         
+         # 연결된 Conversation 설정
+        conversation = get_object_or_404(Conversation, id=conversation_id)
+
         # Notification 객체 생성
-        notification = Notification.objects.create(user=user, message=message, image=image)
-        
+        notification = Notification.objects.create(user=user, message=message, image=image,  conversation=conversation )
+   
         # 생성된 Notification 객체를 시리얼라이즈하여 응답
         serializer = self.get_serializer(notification)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

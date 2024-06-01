@@ -11,8 +11,10 @@ class Conversation(core_models.TimeStampedModel):
 
     selected_choices = models.JSONField(default=list, blank=True)  # JSON 필드 추가
 
-    image = models.URLField(max_length=500,null=True)  # 사진 (URL 형식)
+    image = models.URLField(max_length=1000,null=True)  # 사진 (URL 형식)
     
+
+    ai_response = models.JSONField(null=True, blank=True)  # AI 모델 응답을 저장할 필드
 
 
     def __str__(self):

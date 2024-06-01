@@ -29,6 +29,7 @@ class ConversationViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         contest_id = request.data.get('contest_id')
         image_url = request.data.get('image')
+        ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
         
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -46,7 +47,10 @@ class ConversationViewSet(ModelViewSet):
         data = request.data.copy()
         if image_url:
             data['image'] = image_url
+        if ai_response:
+            data['ai_response'] = ai_response
         
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         conversation = serializer.save()

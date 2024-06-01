@@ -24,7 +24,7 @@ import re
 
 class CategoryViewSet(ModelViewSet):
     serializer_class = ContestSerializer
-    queryset = Contest.objects.all()
+    queryset = Contest.objects.order_by("-created")
     pagination_class = PageNumberPagination  # 페이지네이션 클래스 설정
     
 
