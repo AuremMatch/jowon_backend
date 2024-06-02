@@ -1,13 +1,22 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
+import os
+import django
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import io
+import base64
 from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.callbacks import LambdaCallback
+from sklearn.model_selection import train_test_split
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+# Django setup
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'your_project_name.settings')
+django.setup()
 
 # 대회별 최대, 최소값 설정
 aptitude_test_max_min = {
@@ -16,6 +25,20 @@ aptitude_test_max_min = {
     '인천건축학생공모전': (68, 17),
     'GCGF 혁신 아이디어 공모': (40, 10),
     '웹 개발 콘테스트': (64, 16)
+}
+
+# 평균값 설정
+average_values = {
+    'grade': 2.5,
+    'depart': 2,
+    'credit': 3,
+    'in_school_award_cnt': 2,
+    'out_school_award_cnt': 1.5,
+    'national_competition_award_cnt': 1,
+    'aptitude_test_score': 45,
+    'certificate': 8,
+    'major_field': 9,
+    'codingTest_score': 1.5
 }
 
 # 모델과 스케일러를 전역 변수로 설정하여 재사용
@@ -29,7 +52,7 @@ def load_and_train_model():
     df = pd.read_excel('jongsulData.xlsx')
     
     # 특성과 라벨 분리
-    X = df.drop(columns=aptitude_test_max_min.keys())
+    X = df.drop(columns=list(aptitude_test_max_min.keys()))
     y = df[list(aptitude_test_max_min.keys())]
 
     # 학습 데이터와 테스트 데이터 분리
@@ -61,6 +84,9 @@ def load_and_train_model():
     print(f"Test MSE: {mse}")
     print(f"Test MAE: {mae}")
 
+# 모델을 로드하고 훈련합니다.
+load_and_train_model()
+
 @csrf_exempt
 def predict_view(request):
     if request.method == 'POST':
@@ -72,7 +98,9 @@ def predict_view(request):
             return JsonResponse({'error': 'No student data provided'}, status=400)
 
         predictions = []
-        for student in students:
+        graphs = []
+
+        for i, student in enumerate(students):
             new_student_data = {
                 'grade': student.get('grade'),
                 'depart': student.get('depart'),
@@ -90,10 +118,14 @@ def predict_view(request):
                 # 모델 예측 함수 호출
                 prediction = predict_contest_winning_probabilities(new_student_data)
                 predictions.append(prediction)
+
+                # 그래프 생성
+                buf = visualize_comparison(new_student_data, average_values, ['grade', 'depart', 'credit', 'in_school_award_cnt', 'out_school_award_cnt', 'national_competition_award_cnt', 'aptitude_test_score', 'certificate', 'major_field', 'codingTest_score'], f"student_{i}.png")
+                graphs.append(base64.b64encode(buf.getvalue()).decode('utf-8'))
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
-        
-        return JsonResponse({'predictions': predictions})
+
+        return JsonResponse({'predictions': predictions, 'graphs': graphs})
 
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
@@ -126,5 +158,36 @@ def predict_contest_winning_probabilities(new_student_data):
     
     return {contest: float(prob) for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
 
+def compare_with_average(student_data, average_values):
+    comparisons = {}
+    for column, value in student_data.items():
+        if value < average_values[column]:
+            comparisons[column] = "Unfit"
+        elif value > average_values[column]:
+            comparisons[column] = "Suitable"
+        else:
+            comparisons[column] = "Average"
+    return comparisons
 
-load_and_train_model()
+def visualize_comparison(student_data, average_values, column_order, filename):
+    comparisons = compare_with_average(student_data, average_values)
+    columns = [col for col in column_order if col in student_data.keys()]
+    values = [student_data[col] for col in columns]
+    comparison_results = [comparisons[col] for col in columns]
+
+    plt.figure(figsize=(10, 6))
+    bars = plt.barh(columns, values, label='학생 데이터')
+
+    for bar, result in zip(bars, comparison_results):
+        bar_color = 'green' if result == "Suitable" else 'red' if result == "Unfit" else 'blue'
+        bar.set_color(bar_color)
+    
+    plt.xlabel('Values')
+    plt.title('Student Data Comparison with Average')
+    plt.legend()
+    
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    
+    return buf

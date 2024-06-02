@@ -12,29 +12,37 @@ class RatingViewSet(viewsets.ModelViewSet):
     serializer_class = RatingSerializer
     permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(rater=self.request.user)
-
     def create(self, request, *args, **kwargs):
         ratee_id = request.data.get('ratee')
-        rater_id = request.data.get('rater')  
-        
+        score = request.data.get('score')
+
         if not ratee_id:
             return Response({"error": "ratee field is required"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if not rater_id:
-            rater_id = request.user.id  # 'rater' 필드가 없으면 현재 로그인된 사용자를 사용
-        
-        try:
-            # 'rater' 필드를 요청 데이터에서 가져오고, 존재하지 않으면 기본값으로 설정
-            rater_id = int(rater_id)
-        except ValueError:
-            return Response({"error": "Invalid value for 'rater'"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        if int(rater_id) == int(ratee_id):
+
+        if int(request.user.id) == int(ratee_id):
             return Response({"error": "You cannot rate yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            ratee_id = int(ratee_id)
+            score = int(score)
+        except ValueError:
+            return Response({"error": "Invalid value for 'ratee' or 'score'"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if score < 1 or score > 5:
+            return Response({"error": "Score must be between 1 and 5"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if the rater has already rated the ratee
+        existing_rating = Rating.objects.filter(rater=request.user, ratee_id=ratee_id).first()
+        if existing_rating:
+            # If a rating already exists for this rater and ratee, update it
+            existing_rating.score = score
+            existing_rating.save()
+            serializer = self.get_serializer(existing_rating)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         
-        data = request.data.copy()
-        data['rater'] = rater_id
-        
-        return super().create(request, *args, data=data, **kwargs)
+        # If no rating exists, create a new one
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(rater=request.user, ratee_id=ratee_id, score=score)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
