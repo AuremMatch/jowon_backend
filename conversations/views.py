@@ -20,6 +20,8 @@ from contests.views import ContestViewSet
 from contests.models import Contest
 import requests
 
+
+
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all().order_by('-created')
@@ -30,6 +32,7 @@ class ConversationViewSet(ModelViewSet):
         contest_id = request.data.get('contest_id')
         image_url = request.data.get('image')
         ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
+        graph = request.data.get('graph')  # AI 응답 데이터 가져오기
         
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -49,6 +52,8 @@ class ConversationViewSet(ModelViewSet):
             data['image'] = image_url
         if ai_response:
             data['ai_response'] = ai_response
+        if ai_response:
+            data['graph'] = graph
         
 
         serializer = self.get_serializer(data=data)
@@ -66,17 +71,28 @@ class ConversationViewSet(ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-
-    
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    pagination_class = None 
+    pagination_class = None
+
+    def get_queryset(self):
+        conversation_id = self.request.query_params.get('conversation_id')
+        if conversation_id is not None:
+            return Message.objects.filter(conversation_id=conversation_id)
+        return super().get_queryset()
 
     def create(self, request, *args, **kwargs):
-       
-     
+        conversation_id = request.data.get('conversation_id')
+        if not conversation_id:
+            return Response({'error': 'Conversation ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            conversation = Conversation.objects.get(id=conversation_id)
+        except Conversation.DoesNotExist:
+            return Response({'error': 'Conversation not found'}, status=status.HTTP_404_NOT_FOUND)
+
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)  # 현재 요청을 보낸 사용자를 메시지의 소유자로 설정
+            serializer.save(user=request.user, conversation=conversation)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

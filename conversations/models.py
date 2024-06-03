@@ -15,7 +15,7 @@ class Conversation(core_models.TimeStampedModel):
     
 
     ai_response = models.JSONField(null=True, blank=True)  # AI 모델 응답을 저장할 필드
-
+    graph = models.JSONField(null=True, blank=True) 
 
     def __str__(self):
         return str(self.created)
