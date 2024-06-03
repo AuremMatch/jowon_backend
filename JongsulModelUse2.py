@@ -8,9 +8,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import shap
 
+
 plt.rcParams['font.family'] ='Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] =False
-
 
 # 대회별 최대, 최소값 설정
 aptitude_test_max_min = {

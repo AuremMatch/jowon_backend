@@ -64,6 +64,13 @@ class Contest(TimeStampedModel):
     위치 = models.CharField(max_length=100, null=True)  # 위치
     사진 = models.URLField(null=True)  # 사진 (URL 형식)
     참고링크 = models.URLField(null=True)
+
+    주최 = models.CharField(max_length=200, blank=True) 
+    응모분야 = models.CharField(max_length=200, blank=True) 
+    참가대상 = models.CharField(max_length=200, blank=True) 
+    접수기간 = models.CharField(max_length=200, blank=True) 
+    접수방법 = models.CharField(max_length=200, blank=True) 
+    시상금 = models.CharField(max_length=200, blank=True) 
     def __str__(self):
         return self.제목
 

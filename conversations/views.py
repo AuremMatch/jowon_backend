@@ -19,7 +19,7 @@ from django.shortcuts import get_object_or_404
 from contests.views import ContestViewSet
 from contests.models import Contest
 import requests
-
+import random
 
 
 class ConversationViewSet(ModelViewSet):
@@ -45,6 +45,16 @@ class ConversationViewSet(ModelViewSet):
         
         applicants = response.json()
         user_ids = [applicant['id'] for applicant in applicants]
+
+         # 현재 사용자 ID를 가져옴
+        current_user_id = request.user.id
+
+        # 현재 사용자를 목록에서 제거
+        if current_user_id in user_ids:
+            user_ids.remove(current_user_id)
+
+        # 나머지 사용자 중 3명을 무작위로 선택하고 현재 사용자를 포함하여 총 4명으로 설정
+        selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
         
         # `data`에 `image` URL을 추가하여 serializer에 전달
         data = request.data.copy()
@@ -60,7 +70,7 @@ class ConversationViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         conversation = serializer.save()
 
-        conversation.participants.set(user_ids)
+        conversation.participants.set(selected_user_ids)
         conversation.save()
 
         headers = self.get_success_headers(serializer.data)
