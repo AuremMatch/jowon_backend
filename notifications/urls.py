@@ -7,4 +7,5 @@ urlpatterns = [
     path('proposals/<int:pk>/accept/', ProposalViewSet.as_view({'post': 'accept'}), name='proposal-accept'),
     path('', NotificationViewSet.as_view({'get': 'list', 'post': 'create'}), name='notification-list'),
     path('<int:pk>/', NotificationViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='notification-detail'),
+     path('short-messages/', NotificationViewSet.as_view({'get': 'short_messages'}), name='notification-short-messages'),
 ]

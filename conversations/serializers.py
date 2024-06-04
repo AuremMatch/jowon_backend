@@ -14,8 +14,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
-    messages = MessageSerializer(many=True, read_only=True)  # Conversation에 연결된 모든 Message를 시리얼라이즈하는 부분
+    messages = MessageSerializer(many=True, read_only=True)
     
     class Meta:
         model = Conversation
-        fields =  '__all__'
+        exclude = ('주최', '응모분야', '참가대상', '접수기간', '접수방법', '시상금')

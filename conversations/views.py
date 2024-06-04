@@ -49,10 +49,6 @@ class ConversationViewSet(ModelViewSet):
          # 현재 사용자 ID를 가져옴
         current_user_id = request.user.id
 
-        # 현재 사용자를 목록에서 제거
-        if current_user_id in user_ids:
-            user_ids.remove(current_user_id)
-
         # 나머지 사용자 중 3명을 무작위로 선택하고 현재 사용자를 포함하여 총 4명으로 설정
         selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
         
@@ -65,7 +61,6 @@ class ConversationViewSet(ModelViewSet):
         if ai_response:
             data['graph'] = graph
         
-
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         conversation = serializer.save()
@@ -75,6 +70,15 @@ class ConversationViewSet(ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        try:
+            conversation = self.get_object()
+            conversation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Conversation.DoesNotExist:
+            return Response({'error': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
 
     
     

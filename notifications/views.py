@@ -8,6 +8,8 @@ from .models import Proposal, Notification
 from .serializers import ProposalSerializer, NotificationSerializer
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from django.db.models import F, Value, CharField, ExpressionWrapper
+from django.db.models.functions import Length
 
 from conversations.models import Conversation
 
@@ -59,3 +61,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
         # 생성된 Notification 객체를 시리얼라이즈하여 응답
         serializer = self.get_serializer(notification)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=['get'], url_path='short-messages')
+    def short_messages(self, request):
+        # message 길이가 5 이하인 알림 필터링
+        short_messages = Notification.objects.annotate(message_length=Length('message')).filter(message_length__lte=5).order_by('-created_at')
+        serializer = self.get_serializer(short_messages, many=True)
+        return Response(serializer.data)
