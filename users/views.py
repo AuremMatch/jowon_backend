@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+import os  # os 모듈 import 추가
+from django.conf import settings
 from . import models
 from .serializers import UserSerializer
 from django.contrib.auth import authenticate, login, logout
@@ -17,6 +19,13 @@ from contests.models import Contest
 from ratings.models import Rating
 from django.db.models import Avg
 from .serializers import PrivateUserSerializer
+
+import pandas as pd
+import numpy as np
+import tensorflow as tf
+from sklearn.preprocessing import StandardScaler
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 
 from . import serializers
@@ -102,6 +111,52 @@ class ApplyView(APIView):
             except Contest.DoesNotExist:
                 pass
         return Response(status=status.HTTP_400_BAD_REQUEST)
+    
+    def post(self, request):
+        contest_id = request.data.get("contest_id", None)
+        if contest_id is None:
+            return Response({'error': 'Contest ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            contest = Contest.objects.get(pk=contest_id)
+        except Contest.DoesNotExist:
+            return Response({'error': 'Contest not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        users = contest.apply.all()
+        results = []
+
+        for user in users:
+            try:
+                score = user.score  # User 모델과 연결된 Score 모델 인스턴스 가져오기
+            except models.Score.DoesNotExist:
+                return Response({'error': f'Score not found for user {user.username}'}, status=status.HTTP_404_NOT_FOUND)
+
+            student_data = {
+                'grade': score.grade,
+                'depart': score.depart,
+                'credit': score.credit,
+                'in_school_award_cnt': score.in_school_award_cnt,
+                'out_school_award_cnt': score.out_school_award_cnt,
+                'national_competition_award_cnt': score.national_competition_award_cnt,
+                'aptitude_test_score': score.aptitude_test_score,
+                'certificate': score.certificate,
+                'major_field': score.major_field,
+                'codingTest_score': score.codingTest_score,
+            }
+
+            # Check if all required columns are present and not None
+            missing_columns = [col for col in student_data if student_data[col] is None]
+            if missing_columns:
+                return Response({'error': f'Missing columns: {", ".join(missing_columns)}'}, status=status.HTTP_400_BAD_REQUEST)
+
+            prediction = predict_contest_winning_probabilities(student_data)
+            results.append({
+                'user_id': user.id,
+                'user_name': user.이름,
+                'predictions': prediction
+            })
+
+        return Response(results)
 
     
     # def post(self, request):
@@ -255,4 +310,122 @@ class UpdateSelectedChoicesView(APIView):
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+# 대회별 최대, 최소값 설정
+aptitude_test_max_min = {
+    '중대한 사회 안전 이니까': (48, 12),
+    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
+    '인천건축학생공모전': (68, 17),
+    'GCGF 혁신 아이디어 공모': (40, 10),
+    '웹 개발 콘테스트': (64, 16)
+}
 
+# 독립 변수 최대값, 최소값 설정
+max_min = {
+    'national_competition_award_cnt': (5, 0),
+    'out_school_award_cnt': (5, 0),
+    'in_school_award_cnt': (5, 0),
+    'certificate': (12, 0),
+    'major_field': (13, 0),
+    'depart': (4, 0),
+    'credit': (4.5, 1.0),
+    'grade': (4, 1),
+    'codingTest_score': (2, 0)
+}
+
+# 모델과 스케일러를 전역 변수로 설정하여 재사용
+model = None
+scaler = None
+
+def load_model_and_scaler():
+    global model, scaler
+
+    # 모델 로드
+    model_path = os.path.join(settings.BASE_DIR, 'users', 'JongsulModel.h5')
+    model = tf.keras.models.load_model(model_path)
+
+    # 데이터 로드 및 전처리
+    df = pd.read_excel('jongsulData.xlsx')
+    X = df.drop(columns=list(aptitude_test_max_min.keys()))
+    y = df[list(aptitude_test_max_min.keys())]
+
+    # 스케일러 학습
+    scaler = StandardScaler()
+    scaler.fit(X)
+
+# 모델과 스케일러 로드
+load_model_and_scaler()
+
+# 새로운 학생 데이터 예측
+def predict_contest_winning_probabilities(new_student_data):
+    new_student_df = pd.DataFrame([new_student_data])
+    new_student_data_scaled = scaler.transform(new_student_df)
+    predictions = model.predict(new_student_data_scaled)[0]
+    
+    # 확률값을 0과 100 사이의 값으로 변환
+    predictions = np.clip(predictions, 0, 100)
+    
+    return {contest: prob for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
+
+class PredictAPIView(APIView):
+
+    def get(self, request):
+        scores = models.Score.objects.all()
+        serializer = serializers.ScoreSerializer(scores, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        student_data = request.data
+
+        # 데이터 검증
+        print("Received data:", student_data)
+
+        # 데이터프레임으로 변환
+        try:
+            new_student_df = pd.DataFrame([student_data])
+            print("DataFrame created successfully:")
+            print(new_student_df)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 각 열의 데이터 타입 확인
+        for column in new_student_df.columns:
+            print(f"Column {column} type: {type(new_student_df[column].iloc[0])}")
+            if isinstance(new_student_df[column].iloc[0], (list, np.ndarray)):
+                return Response({'error': f'Column {column} contains a sequence: {new_student_df[column].iloc[0]}'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 필요한 열만 선택하여 정규화
+        try:
+            selected_columns = ['grade', 'depart', 'credit', 'in_school_award_cnt', 'out_school_award_cnt', 'national_competition_award_cnt', 'aptitude_test_score', 'certificate', 'major_field', 'codingTest_score']
+            for col in selected_columns:
+                if col not in new_student_df:
+                    return Response({'error': f'Missing column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 스케일링 전 데이터 확인
+            print("Data before scaling:")
+            print(new_student_df[selected_columns])
+
+            # 스케일링 적용
+            X_scaled = scaler.transform(new_student_df[selected_columns])
+            
+            # 스케일링 후 데이터 확인
+            print("Data scaled successfully:")
+            print(X_scaled)
+        except ValueError as e:
+            print("Error during scaling:")
+            print(e)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 예측 수행
+        try:
+            predictions = model.predict(X_scaled)[0]
+            print("Prediction successful:")
+            print(predictions)
+        except Exception as e:
+            print("Error during prediction:")
+            print(e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        predictions = np.clip(predictions, 0, 100)
+        
+        result = {contest: prob for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
+        return Response(result)

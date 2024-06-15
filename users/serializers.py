@@ -96,3 +96,6 @@ class PrivateUserSerializer(serializers.ModelSerializer):
 
 
 
+class PredictResultSerializer(serializers.Serializer):
+    aptitude_test_max_min = serializers.DictField(child=serializers.FloatField())
+    predictions = serializers.DictField(child=serializers.FloatField())

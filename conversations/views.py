@@ -43,6 +43,15 @@ class ConversationViewSet(ModelViewSet):
         if response.status_code != 200:
             return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)
         
+        # `data`에 `image` URL을 추가하여 serializer에 전달
+        data = request.data.copy()
+        if image_url:
+            data['image'] = image_url
+        if ai_response:
+            data['ai_response'] = ai_response
+        if ai_response:
+            data['graph'] = graph
+        
         applicants = response.json()
         user_ids = [applicant['id'] for applicant in applicants]
 
@@ -52,14 +61,7 @@ class ConversationViewSet(ModelViewSet):
         # 나머지 사용자 중 3명을 무작위로 선택하고 현재 사용자를 포함하여 총 4명으로 설정
         selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
         
-        # `data`에 `image` URL을 추가하여 serializer에 전달
-        data = request.data.copy()
-        if image_url:
-            data['image'] = image_url
-        if ai_response:
-            data['ai_response'] = ai_response
-        if ai_response:
-            data['graph'] = graph
+      
         
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)

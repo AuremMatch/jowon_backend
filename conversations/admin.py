@@ -12,7 +12,6 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(models.Conversation)
 class ConversationAdmin(admin.ModelAdmin):
-
     """ Conversation Admin Definition """
 
-    pass
+    list_display = ('teamName',)  # 표시할 필드를 지정합니다. 튜플 형식으로 지정합니다.

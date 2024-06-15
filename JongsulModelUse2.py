@@ -55,7 +55,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # TensorFlow SavedModel로부터 모델을 로드
-loaded_model = tf.keras.models.load_model(r'C:\Mymodel\JongsulModel.h5')
+loaded_model = tf.keras.models.load_model('JongsulModel.h5')
 
 # 모델 평가
 mse, mae = loaded_model.evaluate(X_scaled, y)

@@ -43,5 +43,5 @@ model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 # 모델 학습
 history = model.fit(X_train_scaled, y_train, epochs=50, validation_split=0.2)
 
-# 모델 저장 이미 저장중이기 때문에 주석
-model.save(r'C:\Mymodel\JongsulModel.h5')
+# 모델 저장
+model.save('JongsulModel.h5')
