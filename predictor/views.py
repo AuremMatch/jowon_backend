@@ -61,7 +61,7 @@
 #     X_scaled = scaler.fit_transform(X)
 
     
-#     mse, mae = model.evaluate(X_scaled, y)
+#     # mse, mae = model.evaluate(X_scaled, y)
 #     print("평균 제곱 오차:", mse)
 #     print("평균 절대 오차:", mae)
 

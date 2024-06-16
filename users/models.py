@@ -36,17 +36,37 @@ class User(AbstractUser):
 
 class Score(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='score')  # 외래 키로 User 모델과 연결
-    grade = models.IntegerField(null=True)  # 학점 (실수형)
-    depart = models.IntegerField(null=True)  # 학과 (정수형)
-    credit = models.FloatField(null=True)  # 학점 (실수형)
-    in_school_award_cnt = models.IntegerField(null=True)  # 교내 수상 횟수 (정수형)
-    out_school_award_cnt = models.IntegerField(null=True)  # 교외 수상 횟수 (정수형)
+    grade = models.IntegerField(null=True)  # 학점 (실수형) => 성실도 => 낮게 
+    depart = models.IntegerField(null=True)  # 학과 (정수형) => 연관학과
+    credit = models.FloatField(null=True)  # 학점 (실수형) 
+    in_school_award_cnt = models.IntegerField(null=True)  # 교내 수상 횟수 (정수형) => 
+    out_school_award_cnt = models.IntegerField(null=True)  # 교외 수상 횟수 (정수형) =>
     national_competition_award_cnt = models.IntegerField(null=True)  # 국가대회 수상 횟수 (정수형)
     aptitude_test_score = models.IntegerField(null=True)  # 적성 테스트 점수 (정수형)
-    certificate = models.IntegerField(null=True)  # 자격증 보유 여부 (정수형)
+    certificate = models.IntegerField(null=True)  # 자격증 보유 여부 (정수형) => 근거
     major_field = models.IntegerField(null=True)  # 전공 분야 (정수형)
-    codingTest_score = models.IntegerField(null=True)  # 코딩 테스트 점수 (정수형)
+    codingTest_score = models.IntegerField(null=True)  # 코딩 테스트 점수 (정수형) =>
 
+
+    # 부트캠프 참여여부  1 0 => 가중치높게
+    # 진위여부 파악 => bbs
+    # 멘토 멘티 => 
+    # 외국인교환학생
+
+    # 깃허브 스타 프로그래머스 백준 가산점 부여 54321 성실도
+
+
+    # 만약에 이팀 성적이 좋았을 경우 가중치 점수 더 추가해서 인공지능 정확도 올리기
+
+    # 경험해본적 없음 추가
+
+    # 지역 상관여부
+    
+
+    # 자격증 섹션 여러개두기
+
+    # 6각형 능력치파악
+    # 성실도 경험 성과 
 
 
 class UserContestChoices(models.Model):
