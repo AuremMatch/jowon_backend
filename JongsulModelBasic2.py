@@ -16,7 +16,7 @@ aptitude_test_max_min = {
 }
 
 # 데이터 로드
-df = pd.read_excel('jongsulData.xlsx')
+df = pd.read_excel('jongsulData3.xlsx')
 
 # 특성과 라벨 분리
 X = df.drop(columns=aptitude_test_max_min.keys())
@@ -44,4 +44,4 @@ model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 history = model.fit(X_train_scaled, y_train, epochs=50, validation_split=0.2)
 
 # 모델 저장
-model.save('JongsulModel.h5')
+model.save('JongsulModel3.h5')

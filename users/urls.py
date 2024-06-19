@@ -24,6 +24,25 @@ urlpatterns = [
             }
         ),
     ),
+
+     path(
+        "score/",
+        views.ScoreViewSet.as_view(
+            {
+                "get": "list",
+                "post": "create",
+            }
+        ),
+    ),
+    path('averages_performance/', views.ScoreViewSet.as_view({
+        'get': 'averages_performance',
+    }), name='averages-performance'),
+    path('averages_experience/', views.ScoreViewSet.as_view({
+        'get': 'averages_experience',
+    }), name='averages-experience'),
+    path('averages_result/', views.ScoreViewSet.as_view({
+        'get': 'averages_result',
+    }), name='averages-result'),
     path(
         "<int:pk>",
         views.UserViewSet.as_view(
@@ -37,4 +56,5 @@ urlpatterns = [
 
     path('update-selected-choices/', views.UpdateSelectedChoicesView.as_view(), name='update-selected-choices'),
    
+
 ]

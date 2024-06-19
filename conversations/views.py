@@ -33,6 +33,7 @@ class ConversationViewSet(ModelViewSet):
         image_url = request.data.get('image')
         ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
         graph = request.data.get('graph')  # AI 응답 데이터 가져오기
+        matching_type = request.data.get('matching_type')  # 매칭 유형을 요청 데이터에서 가져옴
         
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -58,8 +59,14 @@ class ConversationViewSet(ModelViewSet):
          # 현재 사용자 ID를 가져옴
         current_user_id = request.user.id
 
-        # 나머지 사용자 중 3명을 무작위로 선택하고 현재 사용자를 포함하여 총 4명으로 설정
-        selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
+        if matching_type == 'random':
+            selected_user_ids = self.random_matching(applicants, current_user_id)
+        elif matching_type == 'top_two':
+            selected_user_ids = self.top_two_matching(applicants, current_user_id)
+        else:
+            return Response({'error': 'Invalid matching type.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        data['matching_type'] = matching_type  # matching_type을 data에 추가
         
       
         
@@ -73,6 +80,18 @@ class ConversationViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    
+    def random_matching(self, applicants, current_user_id):
+        user_ids = [applicant['id'] for applicant in applicants]
+        selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
+        return selected_user_ids
+
+    def top_two_matching(self, applicants, current_user_id):
+        top_two_users = [applicant['id'] for applicant in applicants[:2]]
+        selected_user_ids = top_two_users + [current_user_id]
+        return selected_user_ids
+    
+    
     @action(detail=True, methods=['delete'])
     def destroy(self, request, pk=None):
         try:

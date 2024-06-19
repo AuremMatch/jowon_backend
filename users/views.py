@@ -321,16 +321,22 @@ aptitude_test_max_min = {
 
 # 독립 변수 최대값, 최소값 설정
 max_min = {
-    'national_competition_award_cnt': (5, 0),
-    'out_school_award_cnt': (5, 0),
-    'in_school_award_cnt': (5, 0),
-    'certificate': (12, 0),
+    'out_school_award_cnt': (10, 0),
+    'in_school_award_cnt': (10, 0),
+    'certificate_score': (12, 0),
+    'certificate_count': (10, 0),
     'major_field': (13, 0),
-    'depart': (4, 0),
-    'credit': (4.5, 1.0),
-    'grade': (4, 1),
-    'codingTest_score': (2, 0)
+    'depart': (3, 1),
+    'grade': (4.5, 1.0),
+    'senior': (4, 1),
+    'coding_test_score': (5, 0),
+    'courses_taken': (3, 1),  # 수정
+    'github_commit_count': (50, 1),  # 추가
+    'baekjoon_score': (12, 1),  # 추가
+    'programmers_score': (12, 1),  # 추가
+    'bootcamp_experience': (2, 1),  # 추가
 }
+
 
 # 모델과 스케일러를 전역 변수로 설정하여 재사용
 model = None
@@ -340,11 +346,11 @@ def load_model_and_scaler():
     global model, scaler
 
     # 모델 로드
-    model_path = os.path.join(settings.BASE_DIR, 'users', 'JongsulModel.h5')
+    model_path = os.path.join(settings.BASE_DIR, 'users', 'JongsulModel3.h5')
     model = tf.keras.models.load_model(model_path)
 
     # 데이터 로드 및 전처리
-    df = pd.read_excel('jongsulData.xlsx')
+    df = pd.read_excel('jongsulData3.xlsx')
     X = df.drop(columns=list(aptitude_test_max_min.keys()))
     y = df[list(aptitude_test_max_min.keys())]
 
@@ -379,6 +385,26 @@ class PredictAPIView(APIView):
         # 데이터 검증
         print("Received data:", student_data)
 
+        # 필드 매핑
+        column_mapping = {
+            'grade': 'grade',
+            'github_commit_count': 'github_commit_count',
+            'baekjoon_score': 'baekjoon_score',
+            'programmers_score': 'programmers_score',
+            'certificate_count': 'certificate_count',
+            'senior': 'senior',
+            'depart': 'depart',
+            'courses_taken': 'courses_taken',
+            'major_field': 'major_field',
+            'bootcamp_experience': 'bootcamp_experience',
+            'in_school_award_cnt': 'in_school_award_cnt',
+            'out_school_award_cnt': 'out_school_award_cnt',
+            'coding_test_score': 'coding_test_score',
+            'certificate_score': 'certificate_score',
+            'aptitude_test_score': 'aptitude_test_score',
+           
+        }
+
         # 데이터프레임으로 변환
         try:
             new_student_df = pd.DataFrame([student_data])
@@ -387,15 +413,12 @@ class PredictAPIView(APIView):
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 각 열의 데이터 타입 확인
-        for column in new_student_df.columns:
-            print(f"Column {column} type: {type(new_student_df[column].iloc[0])}")
-            if isinstance(new_student_df[column].iloc[0], (list, np.ndarray)):
-                return Response({'error': f'Column {column} contains a sequence: {new_student_df[column].iloc[0]}'}, status=status.HTTP_400_BAD_REQUEST)
+        # Score 모델에 맞게 필드명 수정 및 선택
+        new_student_df = new_student_df.rename(columns=column_mapping)
+        selected_columns = list(column_mapping.values())
 
         # 필요한 열만 선택하여 정규화
         try:
-            selected_columns = ['grade', 'depart', 'credit', 'in_school_award_cnt', 'out_school_award_cnt', 'national_competition_award_cnt', 'aptitude_test_score', 'certificate', 'major_field', 'codingTest_score']
             for col in selected_columns:
                 if col not in new_student_df:
                     return Response({'error': f'Missing column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
@@ -404,9 +427,9 @@ class PredictAPIView(APIView):
             print("Data before scaling:")
             print(new_student_df[selected_columns])
 
-            # 스케일링 적용
+            # 스케일링 적용 (스케일러를 사용하여 정규화)
             X_scaled = scaler.transform(new_student_df[selected_columns])
-            
+
             # 스케일링 후 데이터 확인
             print("Data scaled successfully:")
             print(X_scaled)
@@ -415,9 +438,9 @@ class PredictAPIView(APIView):
             print(e)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 예측 수행
+        # 예측 수행 (로드된 모델 사용)
         try:
-            predictions = model.predict(X_scaled)[0]
+            predictions = predict_contest_winning_probabilities(new_student_df[selected_columns].to_dict(orient='records')[0])
             print("Prediction successful:")
             print(predictions)
         except Exception as e:
@@ -425,7 +448,50 @@ class PredictAPIView(APIView):
             print(e)
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        predictions = np.clip(predictions, 0, 100)
-        
-        result = {contest: prob for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
-        return Response(result)
+        # 예측 결과 반환
+        return Response(predictions)
+
+
+class ScoreViewSet(ModelViewSet):
+    queryset = models.Score.objects.all()
+    serializer_class = serializers.ScoreSerializer
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)  # 로그인된 유저를 user 필드에 설정
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def averages_performance(self, request):
+        avg_data = models.Score.objects.aggregate(
+            avg_grade=Avg('grade'),
+            avg_github_commit_count=Avg('github_commit_count'),
+            avg_baekjoon_score=Avg('baekjoon_score'),
+            avg_programmers_score=Avg('programmers_score'),
+            avg_certificate_count=Avg('certificate_count')
+        )
+        return Response(avg_data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def averages_experience(self, request):
+        avg_data = models.Score.objects.aggregate(
+            avg_depart=Avg('depart'),
+            avg_courses_taken=Avg('courses_taken'),
+            avg_major_field=Avg('major_field'),
+            avg_bootcamp_experience=Avg('bootcamp_experience')
+        )
+        return Response(avg_data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def averages_result(self, request):
+        avg_data = models.Score.objects.aggregate(
+            avg_in_school_award_cnt=Avg('in_school_award_cnt'),
+            avg_out_school_award_cnt=Avg('out_school_award_cnt'),
+            avg_coding_test_score=Avg('coding_test_score'),
+            avg_certificate_score=Avg('certificate_score')
+        )
+        return Response(avg_data)
+    

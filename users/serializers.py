@@ -14,6 +14,8 @@ class ScoreSerializer(serializers.ModelSerializer):
         model = Score
         fields = '__all__'
 
+        read_only_fields = ('user',)  # user 필드를 read_only로 설정
+
 
 class UserContestChoicesSerializer(serializers.ModelSerializer):
     contest = ContestSerializer()

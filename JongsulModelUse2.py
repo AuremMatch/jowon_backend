@@ -23,28 +23,26 @@ aptitude_test_max_min = {
 
 # 독립 변수 최대값, 최소값 설정
 max_min = {
-    'national_competition_award_cnt': (5, 0),
-    'out_school_award_cnt': (5, 0),
-    'in_school_award_cnt': (5, 0),
-    'certificate': (12, 0),  # 5개의 자격증 합산
-    'major_field': (13, 0),   # 5개의 주전공 합산
-    'depart': (4, 0),
-    'credit': (4.5, 1.0),
-    'grade': (4, 1),
-    'codingTest_score': (2, 0)
+    'out_school_award_cnt': (10, 0),
+    'in_school_award_cnt': (10, 0),
+    'certificate_score': (12, 0),
+    'certificate_count': (10, 0),
+    'major_field': (13, 0),
+    'depart': (3, 1),
+    'grade': (4.5, 1.0),
+    'senior': (4, 1),
+    'coding_test_score': (5, 0),
+    'courses_taken': (3, 1),  # 수정
+    'github_commit_count': (50, 1),  # 추가
+    'baekjoon_score': (12, 1),  # 추가
+    'programmers_score': (12, 1),  # 추가
+    'bootcamp_experience': (2, 1),  # 추가
 }
 
-# 대회별 최대, 최소값 설정
-aptitude_test_max_min = {
-    '중대한 사회 안전 이니까': (48, 12),
-    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
-    '인천건축학생공모전': (68, 17),
-    'GCGF 혁신 아이디어 공모': (40, 10),
-    '웹 개발 콘테스트': (64, 16)
-}
+
 
 # 데이터 로드
-df = pd.read_excel('jongsulData.xlsx')
+df = pd.read_excel('jongsulData2.xlsx')
 
 # 특성과 라벨 분리
 X = df.drop(columns=aptitude_test_max_min.keys())
@@ -55,7 +53,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # TensorFlow SavedModel로부터 모델을 로드
-loaded_model = tf.keras.models.load_model('JongsulModel.h5')
+loaded_model = tf.keras.models.load_model('JongsulModel2.h5')
 
 # 모델 평가
 mse, mae = loaded_model.evaluate(X_scaled, y)
@@ -109,54 +107,40 @@ def visualize_comparison(student_data, average_values, column_order, color):
 # 여러 학생 데이터 생성
 student_data_list = [
     {
-        'grade': 3,
-        'depart': 2,
-        'credit': 2,
-        'in_school_award_cnt': 1,
-        'out_school_award_cnt': 1,
-        'national_competition_award_cnt': 2,
-        'aptitude_test_score': 50,
-        'certificate': 10,
-        'major_field': 10,
-        'codingTest_score': 2
-    },
-    {
-        'grade': 4,
-        'depart': 3,
-        'credit': 4.5,
-        'in_school_award_cnt': 5,
-        'out_school_award_cnt': 5,
-        'national_competition_award_cnt': 3,
-        'aptitude_test_score': 62,
-        'certificate': 12,
-        'major_field': 13,
-        'codingTest_score': 2
-    },
-    # 더 많은 학생 데이터 추가 가능
-    {
-        'grade': 1,
+        'grade': 4.0,
+        'github_commit_count': 50,
+        'baekjoon_score': 11,
+        'programmers_score': 3,
+        'certificate_count': 7,
+        'senior': 3,
         'depart': 1,
-        'credit': 1,
-        'in_school_award_cnt': 0,
-        'out_school_award_cnt': 2,
-        'national_competition_award_cnt': 0,
-        'aptitude_test_score': 64,
-        'certificate': 0,
-        'major_field': 6,
-        'codingTest_score': 0
-    },
-    {
-        'grade': 4,
-        'depart': 1,
-        'credit': 2,
-        'in_school_award_cnt': 1,
+        'courses_taken': 3,
+        'major_field': 11,
+        'bootcamp_experience': 1,
+        'in_school_award_cnt': 3,
         'out_school_award_cnt': 3,
-        'national_competition_award_cnt': 3,
-        'aptitude_test_score': 24,
-        'certificate': 12,
-        'major_field': 13,
-        'codingTest_score': 2
+        'coding_test_score': 3,
+        'certificate_score': 3,
+        'aptitude_test_score': 7,
     },
+    {
+        'grade': 1.0,
+        'github_commit_count': 1,
+        'baekjoon_score': 1,
+        'programmers_score': 1,
+        'certificate_count': 1,
+        'senior': 1,
+        'depart': 1,
+        'courses_taken': 1,
+        'major_field': 11,
+        'bootcamp_experience': 1,
+        'in_school_award_cnt': 3,
+        'out_school_award_cnt': 3,
+        'coding_test_score': 3,
+        'certificate_score': 3,
+        'aptitude_test_score': 7,
+    },
+   
 ]
 
 # 각 학생 데이터에 대한 예측 출력
@@ -168,16 +152,16 @@ for i, student_data in enumerate(student_data_list, start=1):
     print()
 
 # credit 열을 제외한 나머지 열 선택
-independent_variables_only = df.drop(columns=['credit'] + list(aptitude_test_max_min.keys()))
+independent_variables_only = df.drop(columns=['senior'] + list(aptitude_test_max_min.keys()))
 
 # credit 열을 제외한 나머지 열의 평균 계산 및 정수로 반올림
 average_values = independent_variables_only.mean().round().astype(int)
 
 # credit 열의 평균 계산 및 정수로 반올림
-credit_average = df['credit'].mean().round().astype(int)
+credit_average = df['senior'].mean().round().astype(int)
 
 # credit 열의 평균 값을 average_values에 추가하여 순서 조정
-average_values = pd.concat([average_values, pd.Series({'credit': credit_average})])
+average_values = pd.concat([average_values, pd.Series({'senior': credit_average})])
 
 # 결과 출력
 print("credit 열을 제외한 나머지 열의 평균:")
@@ -194,16 +178,16 @@ for i, student_data in enumerate(student_data_list, start=1):
     print()
 
 
-# 각 학생 데이터에 대해 시각화하여 표시
-colors = ['#FFAEC9', '#BEFFAA', '#FFFCAA', '#A4CEFF']
-for i, student_data in enumerate(student_data_list, start=1):
-    print(f"학생 {i}의 대회별 예측:")
-    predictions = predict_contest_winning_probabilities(student_data)
-    for contest, prob in predictions.items():
-        print(f"{contest}: {prob:.2f}%")
-    print()
-    visualize_comparison(student_data, average_values, ['grade', 'depart', 'credit', 'in_school_award_cnt', 'out_school_award_cnt', 'national_competition_award_cnt', 
-                                                        'aptitude_test_score', 'certificate', 'major_field', 'codingTest_score'], colors[i-1])
+# # 각 학생 데이터에 대해 시각화하여 표시
+# colors = ['#FFAEC9', '#BEFFAA', '#FFFCAA', '#A4CEFF']
+# for i, student_data in enumerate(student_data_list, start=1):
+#     print(f"학생 {i}의 대회별 예측:")
+#     predictions = predict_contest_winning_probabilities(student_data)
+#     for contest, prob in predictions.items():
+#         print(f"{contest}: {prob:.2f}%")
+#     print()
+#     visualize_comparison(student_data, average_values, ['grade', 'depart', 'credit', 'in_school_award_cnt', 'out_school_award_cnt', 'national_competition_award_cnt', 
+#                                                         'aptitude_test_score', 'certificate', 'major_field', 'codingTest_score'], colors[i-1])
 
 # 학생 데이터에 대한 거리 출력
 for i, student_data in enumerate(student_data_list, start=1):

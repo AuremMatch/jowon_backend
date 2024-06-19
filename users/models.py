@@ -1,6 +1,6 @@
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models import TextChoices
 
 
 class User(AbstractUser):
@@ -33,19 +33,80 @@ class User(AbstractUser):
      # JSON 필드 추가
     selected_choices = models.JSONField(default=list, blank=True)
 
+class MajorField(models.IntegerChoices):
+    COMPUTER_SCIENCE = 1, 'Computer Science'
+    ELECTRICAL_ENGINEERING = 2, 'Electrical Engineering'
+    MECHANICAL_ENGINEERING = 3, 'Mechanical Engineering'
+
+class Department(models.IntegerChoices):
+    COMPUTER_SCIENCE = 1, 'Computer Science'
+    ELECTRICAL_ENGINEERING = 2, 'Electrical Engineering'
+    MECHANICAL_ENGINEERING = 3, 'Mechanical Engineering'
+
+class CourseTakenChoices(models.IntegerChoices):
+    COMPUTER_ENGINEERING = 1, '컴퓨터공학'
+    ARTIFICIAL_INTELLIGENCE = 2, '인공지능'
+    COMPUTER_SYSTEM_AND_NETWORK = 3, '컴퓨터 시스템 및 네트워크'
+    NETWORK_SECURITY = 4, '네트워크 보안'
+    DATABASE = 5, '데이터베이스'
+    WEB_AND_APPLICATION_DEVELOPMENT = 6, '웹 및 어플리케이션 개발'
+    SOFTWARE_ENGINEERING = 7, '소프트웨어 공학'
+
+class CertificateScoreChoices(models.IntegerChoices):
+    COMPUTER_ENGINEERING = 1, '정보기술자격'
+    ARTIFICIAL_INTELLIGENCE = 2, '리눅스마스터'
+    COMPUTER_SYSTEM_AND_NETWORK = 3, '데이터분석'
+    NETWORK_SECURITY = 4, '정보통신기사'
+    DATABASE = 5, '정보처리기사'
+   
 
 class Score(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='score')  # 외래 키로 User 모델과 연결
-    grade = models.IntegerField(null=True)  # 학점 (실수형) => 성실도 => 낮게 
-    depart = models.IntegerField(null=True)  # 학과 (정수형) => 연관학과
-    credit = models.FloatField(null=True)  # 학점 (실수형) 
-    in_school_award_cnt = models.IntegerField(null=True)  # 교내 수상 횟수 (정수형) => 
-    out_school_award_cnt = models.IntegerField(null=True)  # 교외 수상 횟수 (정수형) =>
-    national_competition_award_cnt = models.IntegerField(null=True)  # 국가대회 수상 횟수 (정수형)
-    aptitude_test_score = models.IntegerField(null=True)  # 적성 테스트 점수 (정수형)
-    certificate = models.IntegerField(null=True)  # 자격증 보유 여부 (정수형) => 근거
-    major_field = models.IntegerField(null=True)  # 전공 분야 (정수형)
-    codingTest_score = models.IntegerField(null=True)  # 코딩 테스트 점수 (정수형) =>
+    # One-to-One relationship with the User model
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='score')
+
+    # 학점 (실수형)
+    grade = models.FloatField(null=True)  # 학점을 실수형으로 저장
+
+    # GitHub 커밋 횟수 (정수형)
+    github_commit_count = models.IntegerField(null=True)  # GitHub 커밋 횟수를 정수형으로 저장
+
+    # 백준 점수 (정수형)
+    baekjoon_score = models.IntegerField(null=True)  # 백준 점수를 정수형으로 저장
+
+    # 프로그래머스 점수 (정수형)
+    programmers_score = models.IntegerField(null=True)  # 프로그래머스 점수를 정수형으로 저장
+
+    # 자격증 수 (정수형)
+    certificate_count = models.IntegerField(null=True)  # 자격증 수를 정수형으로 저장
+
+    # 학년 (정수형, choices 필드 사용)
+    senior = models.IntegerField(null=True) # 학년을 설정
+
+    # 학과 (정수형, choices 필드 사용)
+    depart = models.IntegerField(choices=Department.choices, null=True)  # 학과를 선택지에서 선택 가능하도록 설정
+
+    # 수강한 과목 (정수형, choices 필드 사용)
+    courses_taken = models.IntegerField(choices=CourseTakenChoices.choices, null=True)  # 수강한 과목을 선택지에서 선택 가능하도록 설정
+
+    # 전공 분야 (정수형, choices 필드 사용)
+    major_field = models.IntegerField(choices=MajorField.choices, null=True)  # 전공 분야를 선택지에서 선택 가능하도록 설정
+
+    bootcamp_experience = models.IntegerField(choices=((1, 'Yes'), (0, 'No')), null=True)
+
+    # 교내 수상 횟수 (정수형)
+    in_school_award_cnt = models.IntegerField(null=True)  # 교내 수상 횟수를 정수형으로 저장
+
+    # 교외 수상 횟수 (정수형)
+    out_school_award_cnt = models.IntegerField(null=True)  # 교외 수상 횟수를 정수형으로 저장
+
+    # 코딩 테스트 점수 (정수형)
+    coding_test_score = models.IntegerField(null=True)  # 코딩 테스트 점수를 정수형으로 저장
+
+    # 공식 자격증 점수 입력 
+    certificate_score = models.IntegerField(choices=CertificateScoreChoices.choices, null=True) 
+  
+
+    aptitude_test_score = models.IntegerField(null=True)  # 설문조사점수를 정수형으로 저장
 
 
     # 부트캠프 참여여부  1 0 => 가중치높게

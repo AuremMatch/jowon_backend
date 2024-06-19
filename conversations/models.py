@@ -3,6 +3,13 @@ from core import models as core_models
 
 
 class Conversation(core_models.TimeStampedModel):
+    MATCHING_TYPE_CHOICES = [
+        ('random', 'Random Matching'),
+        ('top_two', 'Top Two Matching'),
+        ('same', 'Same Matching'),
+    ]
+
+    matching_type = models.CharField(max_length=10, choices=MATCHING_TYPE_CHOICES, default='random')
 
     """ Conversation Model Definition """
     teamName = models.CharField(max_length=200, blank=True) 
