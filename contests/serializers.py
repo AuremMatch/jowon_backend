@@ -17,3 +17,4 @@ class ContestApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContestApplication
         fields = ['id', 'user', 'contest', 'applied_at']
+

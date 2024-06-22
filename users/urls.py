@@ -1,6 +1,11 @@
 from django.urls import path
 from . import views
 from rest_framework.authtoken.views import obtain_auth_token
+from rest_framework.routers import DefaultRouter
+from django.urls import path, include
+
+router = DefaultRouter()
+router.register(r'api/signup', views.SignUpViewSet, basename='signup')
 
 urlpatterns = [
 
@@ -15,6 +20,8 @@ urlpatterns = [
     path('students/', views.PredictAPIView.as_view(), name='student-list'),
     path('students/predict/', views.PredictAPIView.as_view(), name='student-predict'),
     path("@<str:username>", views.PublicUser.as_view()),
+    # 사용자 계정 활성화 링크
+   
     path(
         "",
         views.UserViewSet.as_view(
@@ -53,8 +60,13 @@ urlpatterns = [
             }
         ),
     ),
+   
+  
 
     path('update-selected-choices/', views.UpdateSelectedChoicesView.as_view(), name='update-selected-choices'),
-   
+    
 
+    path('api/auth/', include('rest_framework.urls')),
+    path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
+    path('api/signup/verify-email/<str:token>/', views.VerifyEmailView.as_view(), name='verify-email'),
 ]

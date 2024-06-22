@@ -62,7 +62,7 @@ urlpatterns = [
         views.ContestApplicationViewSet.as_view({'get': 'list'}),
         name='contest-application-list',
     ),
-    path('<int:pk>/applicants/', views.ContestViewSet.as_view({'get': 'applicants'}), name='contest-applicants'),
+    path('<int:pk>/applicants/', views.ContestViewSet.as_view({'get': 'applicants', 'post': 'applicants'}), name='contest-applicants'),
 
     path('<int:pk>/create_conversation/', views.ContestViewSet.as_view({'post': 'create_conversation'}), name='contest-create-conversation'),
 ]

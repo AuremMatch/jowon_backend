@@ -5,12 +5,18 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 import os  # os 모듈 import 추가
+from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.authtoken.models import Token
+from django.shortcuts import redirect
+from rest_framework.decorators import api_view, permission_classes
 from . import models
+from django.urls import reverse
 from .serializers import UserSerializer
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.urls import reverse_lazy
 from rest_framework import status
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
@@ -20,16 +26,18 @@ from ratings.models import Rating
 from django.db.models import Avg
 from .serializers import PrivateUserSerializer
 
+
 import pandas as pd
 import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 from rest_framework.decorators import action
 from rest_framework.response import Response
-
+import jwt
+from django.shortcuts import get_object_or_404
 
 from . import serializers
-
+from rest_framework import generics
 
 class UserViewSet(ModelViewSet):
 
@@ -248,27 +256,50 @@ class LogOut(APIView):
 class SignUpViewSet(ModelViewSet):
     queryset = models.User.objects.all()
     serializer_class = serializers.SignUpSerializer
-    def create(self, request):
+
+    def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            
-            # 사용자 인증
-            user = authenticate(
-                request,
-                username=request.data['username'],
-                password=request.data['password'],
-            )
-            
-            # 로그인 처리
-            if user:
-                login(request, user)
-                return Response({"ok": "Welcome!"}, status=status.HTTP_201_CREATED)
-            else:
-                return Response({"error": "Failed to authenticate user"}, status=status.HTTP_400_BAD_REQUEST)
+            # 이메일 인증 메일 보내기
+            self.send_verification_email(user)
+            return Response({"message": "User created successfully. Check your email for verification."},
+                            status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+    def send_verification_email(self, user):
+        token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
+        subject = 'Verify your email address'
+        message = f'Hi {user.username}, please click the link to verify your email: ' \
+                  f'http://127.0.0.1:8000/api/signup/verify-email/{token}/'
+        from_email = 'your_email@example.com'  # 이메일 설정에 맞게 변경
+        to_email = user.email
+        send_mail(subject, message, from_email, [to_email])
+
+class VerifyEmailView(APIView):
+    def get(self, request, token):
+        try:
+            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = decoded['user_id']
+            user = models.User.objects.get(id=user_id)
+            user.is_email_verified = True
+            user.save()
+
+            # 로그인 처리
+            user = authenticate(request, username=user.username, password=user.password)
+            if user is not None:
+                login(request, user)
+                # 이메일 인증 후 홈 화면으로 리다이렉트 또는 메시지 반환
+                return redirect('http://127.0.0.1:3000/')
+            else:
+                return Response({"error": "Authentication failed."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist) as e:
+            return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
 
 class UpdateSelectedChoicesView(APIView):
     permission_classes = [IsAuthenticated]

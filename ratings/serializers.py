@@ -4,7 +4,7 @@ from .models import Rating
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = ['id', 'rater', 'ratee', 'score']
+        fields = ['rater', 'ratee', 'activity_score', 'accuracy_score', 'teamwork_score', 'overall_score']
         read_only_fields = ['rater', 'created_at']
 
     def validate(self, data):

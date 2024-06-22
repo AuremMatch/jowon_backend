@@ -162,6 +162,7 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
        'rest_framework.authentication.TokenAuthentication',
        "rest_framework.authentication.SessionAuthentication",
+       "admin.authentication.JWTAuthentication",
    ),
    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
    'PAGE_SIZE': 9,  # 기본 페이지 사이즈를 8로 설정
@@ -171,3 +172,11 @@ REST_FRAMEWORK = {
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:3000"]
 
 APPEND_SLASH = False
+
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587	 # 서버
+EMAIL_FROM = "sssss@sandbox67029800135e4f9eac7b8688a7bbd8c5.mailgun.org"
+EMAIL_HOST_USER = 'donghe1472@gmail.com'
+EMAIL_HOST_PASSWORD = 'ofpq aywz oftn ipgs'
+EMAIL_USE_TLS = True

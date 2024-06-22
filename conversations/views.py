@@ -31,8 +31,6 @@ class ConversationViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         contest_id = request.data.get('contest_id')
         image_url = request.data.get('image')
-        ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
-        graph = request.data.get('graph')  # AI 응답 데이터 가져오기
         matching_type = request.data.get('matching_type')  # 매칭 유형을 요청 데이터에서 가져옴
         
         if not contest_id:
@@ -44,31 +42,53 @@ class ConversationViewSet(ModelViewSet):
         if response.status_code != 200:
             return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)
         
+        applicants = response.json()
+        
+        # 현재 사용자의 예측값 가져오기
+        current_user = request.user
+        my_prediction_value = None
+        
+        for applicant in applicants:
+            if applicant.get('id') == current_user.id:
+                my_prediction_value = applicant.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0)  # 예측값 설정
+                break
+        
+        if my_prediction_value is None:
+            return Response({'error': 'User prediction value not found.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 매칭 유형에 따라 선택된 사용자 ID들을 저장할 리스트
+        selected_user_ids = []
+        
+        if matching_type == 'top_two':
+            # 예측값을 기준으로 정렬
+            applicants.sort(key=lambda x: x.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0), reverse=True)
+            
+            # 상위 세 명의 사용자 ID를 선택
+            selected_user_ids = [
+                applicants[0].get('id'),
+                applicants[1].get('id'),
+                applicants[2].get('id')
+            ]
+        elif matching_type == 'same':
+            # 나와 예측값이 비슷한 사용자 선택 로직 추가
+            # 예측값을 기준으로 정렬
+            applicants.sort(key=lambda x: abs(x.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0) - my_prediction_value))
+            
+            # 비슷한 예측값을 가진 사용자들 선택 (예시로 최상위 3명 선택)
+            selected_user_ids = [
+                applicants[0].get('id'),
+                applicants[1].get('id'),
+                current_user.id  # 현재 사용자 추가
+            ]
+        else:
+            return Response({'error': 'Invalid matching type.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         # `data`에 `image` URL을 추가하여 serializer에 전달
         data = request.data.copy()
         if image_url:
             data['image'] = image_url
-        if ai_response:
-            data['ai_response'] = ai_response
-        if ai_response:
-            data['graph'] = graph
-        
-        applicants = response.json()
-        user_ids = [applicant['id'] for applicant in applicants]
-
-         # 현재 사용자 ID를 가져옴
-        current_user_id = request.user.id
-
-        if matching_type == 'random':
-            selected_user_ids = self.random_matching(applicants, current_user_id)
-        elif matching_type == 'top_two':
-            selected_user_ids = self.top_two_matching(applicants, current_user_id)
-        else:
-            return Response({'error': 'Invalid matching type.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        data['ai_response'] = applicants  # 예측값을 serializer에 추가
         data['matching_type'] = matching_type  # matching_type을 data에 추가
-        
-      
         
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -79,29 +99,6 @@ class ConversationViewSet(ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    
-    def random_matching(self, applicants, current_user_id):
-        user_ids = [applicant['id'] for applicant in applicants]
-        selected_user_ids = random.sample(user_ids, min(len(user_ids), 3)) + [current_user_id]
-        return selected_user_ids
-
-    def top_two_matching(self, applicants, current_user_id):
-        top_two_users = [applicant['id'] for applicant in applicants[:2]]
-        selected_user_ids = top_two_users + [current_user_id]
-        return selected_user_ids
-    
-    
-    @action(detail=True, methods=['delete'])
-    def destroy(self, request, pk=None):
-        try:
-            conversation = self.get_object()
-            conversation.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Conversation.DoesNotExist:
-            return Response({'error': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
-
-    
     
 
 

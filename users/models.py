@@ -24,6 +24,7 @@ class User(AbstractUser):
     깃주소 = models.URLField(blank=True, null=True)  # 깃허브 주소
     포토폴리오링크 = models.URLField(blank=True, null=True)  # 포트폴리오 링크
     연관학과 = models.CharField(max_length=100)  # 학과
+    학교 = models.CharField(max_length=100)  # 학과
     avatar = models.URLField(blank=True)
 
     favs = models.ManyToManyField("contests.Contest", related_name="favs")
@@ -32,6 +33,8 @@ class User(AbstractUser):
 
      # JSON 필드 추가
     selected_choices = models.JSONField(default=list, blank=True)
+
+    is_email_verified = models.BooleanField(default=False)  # 이메일 인증 여부
 
 class MajorField(models.IntegerChoices):
     COMPUTER_SCIENCE = 1, 'Computer Science'
