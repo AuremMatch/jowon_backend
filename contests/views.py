@@ -6,6 +6,8 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from .models import Contest, Like
+from django.http import HttpResponse
+import json
 from .serializers import ContestSerializer, LikeSerializer
 from rest_framework.decorators import action
 from rest_framework.status import HTTP_400_BAD_REQUEST, HTTP_200_OK
@@ -19,7 +21,9 @@ import random
 from django.core.paginator import Paginator,PageNotAnInteger, EmptyPage
 from rest_framework.pagination import PageNumberPagination
 import re
-
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
+from survey.serializers import SurveySerializer
 
 
 class CategoryViewSet(ModelViewSet):
@@ -125,30 +129,17 @@ class ContestApplicationViewSet(ModelViewSet):
 
 class ContestViewSet(ModelViewSet):
     queryset = Contest.objects.all()
-    serializer_class = ContestSerializer  # Contest 모델의 시리얼라이저가 필요합니다.
+    serializer_class = ContestSerializer
+    pagination_class = None  
 
-    @action(detail=True, methods=['get', 'post'])
-    def applicants(self, request, pk=None):
-        contest = self.get_object()
-        
-        if request.method == 'GET':
-            applicants = contest.apply.all()  # 역참조를 사용하여 신청한 유저들 가져오기
-            serializer = UserSerializer(applicants, many=True)
-            return Response(serializer.data)
-        
-        elif request.method == 'POST':
-            predictions = request.data  # 정렬된 데이터를 받음
-            
-            if not predictions:
-                return Response({'error': 'Predictions are required.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            
+    def get_survey(self, request, pk=None):
+        contest = get_object_or_404(Contest, pk=pk)
+        survey = contest.survey
 
-            # 정렬된 데이터를 기반으로 매칭 로직을 수행하거나 필요한 처리를 합니다.
-            # 예를 들어, 여기서는 단순히 데이터를 그대로 반환합니다.
-            # 실제 로직에 따라 데이터를 처리하거나 저장할 수 있습니다.
-            print("Received predictions: ", predictions)
+        serializer = SurveySerializer(survey)  # serializer 초기화
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-            return Response(predictions, status=status.HTTP_200_OK)
-
-    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

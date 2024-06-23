@@ -1,7 +1,7 @@
 from django.db import models
 from users.models import User
 from core.models import TimeStampedModel
-
+from survey.models import Survey
 
 # Create your models here.
 class KoreaContest(models.Model):
@@ -71,6 +71,9 @@ class Contest(TimeStampedModel):
     접수기간 = models.CharField(max_length=200, blank=True) 
     접수방법 = models.CharField(max_length=200, blank=True) 
     시상금 = models.CharField(max_length=200, blank=True) 
+    예측결과 = models.TextField(blank=True, null=True)  # 예측 결과 저장 필드
+
+    survey = models.ForeignKey(Survey, related_name='contests', on_delete=models.CASCADE, null=True) 
     def __str__(self):
         return self.제목
 
