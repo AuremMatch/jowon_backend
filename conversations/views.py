@@ -25,11 +25,13 @@ class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all().order_by('-created')
     permission_classes = [AllowAny]
-    pagination_class = None
+    pagination_class = None 
 
     def create(self, request, *args, **kwargs):
         contest_id = request.data.get('contest_id')
         image_url = request.data.get('image')
+        ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
+        graph = request.data.get('graph')  # 그래프 데이터 가져오기
         matching_type = request.data.get('matching_type')  # 매칭 유형을 요청 데이터에서 가져옴
 
         if not contest_id:
@@ -103,8 +105,10 @@ class ConversationViewSet(ModelViewSet):
         data = request.data.copy()
         if image_url:
             data['image'] = image_url
-        data['ai_response'] = selected_users  # 선택된 사용자들의 예측값을 serializer에 추가
-        data['matching_type'] = matching_type  # matching_type을 data에 추가
+        if ai_response:
+            data['ai_response'] = ai_response  # 요청 데이터에서 직접 ai_response를 추가
+        if graph:
+            data['graph'] = graph  # 요청 데이터에서 직접 graph를 추가
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -120,6 +124,16 @@ class ConversationViewSet(ModelViewSet):
         print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['delete'])
+    def destroy(self, request, pk=None):
+        try:
+            conversation = self.get_object()
+            conversation.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Conversation.DoesNotExist:
+            return Response({'error': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 class MessageViewSet(viewsets.ModelViewSet):
