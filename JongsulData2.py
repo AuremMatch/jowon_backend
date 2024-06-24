@@ -67,13 +67,30 @@ software_weights = {
     'aptitude_test_score': 0.10,
 }
 
+# '웹 개발 콘테스트' 대회 가중치 정의
+contest_weights = {
+    'grade': 0.05,
+    'senior': 0.05,
+    'github_commit_count': 0.05,
+    'baekjoon_score': 0.05,
+    'programmers_score': 0.05,
+    'major_field': 0.05,
+    'depart': 0.05,
+    'courses_taken': 0.05,
+    'bootcamp_experience': 0.05,
+    'in_school_award_cnt': 0.05,
+    'out_school_award_cnt': 0.05,
+    'coding_test_score': 0.05,
+    'aptitude_test_score': 0.30,
+}
+
 # 대회별 최대, 최소값 설정
 aptitude_test_max_min = {
-    '중대한 사회 안전 이니까': (48, 12),
-    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
-    '인천건축학생공모전': (68, 17),
-    'GCGF 혁신 아이디어 공모': (40, 10),
-    '웹 개발 콘테스트': (64, 16)
+    '언어 예측값': (48, 12),
+    '디자인 예측값': (64, 16),
+    '건축 예측값': (68, 17),
+    '현재 대회 예측값': (40, 10),
+    'it 예측값': (64, 16)
 }
 
 # 독립 변수 최대값, 최소값 설정
@@ -112,8 +129,10 @@ def calculate_probability(row, weights, max_min, apt_max_min, contest):
 
 # 종속 변수(대회에서 우승할 확률) 계산
 for contest in aptitude_test_max_min.keys():
-    if contest == '웹 개발 콘테스트':
+    if contest == 'it 예측값':
         weights = software_weights
+    elif contest == "현재 대회 예측값":
+        weights = contest_weights
     else:
         weights = basic_weights
     df[contest] = df.apply(lambda row: calculate_probability(row, weights, max_min, aptitude_test_max_min, contest), axis=1)
@@ -122,4 +141,4 @@ for contest in aptitude_test_max_min.keys():
 print(df.head())
 
 # 엑셀 파일로 저장
-df.to_excel('jongsulData3.xlsx', index=False)
+df.to_excel('jongsulData5.xlsx', index=False)

@@ -7,16 +7,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 # 대회별 최대, 최소값 설정
+# 대회별 최대, 최소값 설정
 aptitude_test_max_min = {
-    '중대한 사회 안전 이니까': (48, 12),
-    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
-    '인천건축학생공모전': (68, 17),
-    'GCGF 혁신 아이디어 공모': (40, 10),
-    '웹 개발 콘테스트': (64, 16)
+    '언어 예측값': (48, 12),
+    '디자인 예측값': (64, 16),
+    '건축 예측값': (68, 17),
+    '현재 대회 예측값': (40, 10),
+    'it 예측값': (64, 16)
 }
 
+
 # 데이터 로드
-df = pd.read_excel('jongsulData3.xlsx')
+df = pd.read_excel('jongsulData4.xlsx')
 
 # 특성과 라벨 분리
 X = df.drop(columns=aptitude_test_max_min.keys())
@@ -44,4 +46,4 @@ model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 history = model.fit(X_train_scaled, y_train, epochs=50, validation_split=0.2)
 
 # 모델 저장
-model.save('JongsulModel3.h5')
+model.save('JongsulModel5.h5')

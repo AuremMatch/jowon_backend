@@ -56,6 +56,8 @@ def predict_contest_winning_probabilities(new_student_data):
     
     # 확률값을 0과 100 사이의 값으로 변환
     predictions = np.clip(predictions, 0, 100)
+
+    
     
     return {contest: prob for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
 

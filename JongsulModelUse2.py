@@ -14,12 +14,13 @@ plt.rcParams['axes.unicode_minus'] =False
 
 # 대회별 최대, 최소값 설정
 aptitude_test_max_min = {
-    '중대한 사회 안전 이니까': (48, 12),
-    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
-    '인천건축학생공모전': (68, 17),
-    'GCGF 혁신 아이디어 공모': (40, 10),
-    '웹 개발 콘테스트': (64, 16)
+    '언어 예측값': (48, 12),
+    '디자인 예측값': (64, 16),
+    '건축 예측값': (68, 17),
+    '현재 대회 예측값': (40, 10),
+    'it 예측값': (64, 16)
 }
+
 
 # 독립 변수 최대값, 최소값 설정
 max_min = {
@@ -42,7 +43,7 @@ max_min = {
 
 
 # 데이터 로드
-df = pd.read_excel('jongsulData2.xlsx')
+df = pd.read_excel('jongsulData4.xlsx')
 
 # 특성과 라벨 분리
 X = df.drop(columns=aptitude_test_max_min.keys())
@@ -53,7 +54,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # TensorFlow SavedModel로부터 모델을 로드
-loaded_model = tf.keras.models.load_model('JongsulModel2.h5')
+loaded_model = tf.keras.models.load_model('JongsulModel5.h5')
 
 # 모델 평가
 mse, mae = loaded_model.evaluate(X_scaled, y)
@@ -107,8 +108,8 @@ def visualize_comparison(student_data, average_values, column_order, color):
 # 여러 학생 데이터 생성
 student_data_list = [
     {
-        'grade': 4.0,
-        'github_commit_count': 50,
+        'grade': 2.0,
+        'github_commit_count': 10,
         'baekjoon_score': 11,
         'programmers_score': 3,
         'certificate_count': 7,
@@ -203,7 +204,9 @@ explainer = shap.DeepExplainer(loaded_model, X_scaled[:1000])
 shap_values = explainer.shap_values(X_scaled[:1000])
 
 # 클래스에 해당하는 실제 이름 정의
-class_names = ['중대한 사회 안전 이니까', '부산 도시브랜드 굿즈 디자인 공모전', '인천건축학생공모전', 'GCGF 혁신 아이디어 공모', '웹 개발 콘테스트']
+class_names = ['언어 예측값', '디자인 예측값', '건축 예측값', '현재 대회 예측값', 'it 예측값']
+
+
 
 # SHAP 값 시각화
 shap.summary_plot(shap_values, features=X_scaled[:1000], feature_names=X.columns, class_names=class_names, plot_type='bar', show=True)
