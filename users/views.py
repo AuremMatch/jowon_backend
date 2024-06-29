@@ -271,9 +271,9 @@ class SignUpViewSet(ModelViewSet):
     def send_verification_email(self, user):
         token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
         subject = 'Verify your email address'
-        message = f'Hi {user.username}, please click the link to verify your email: ' \
+        message = f'안녕하세요 {user.username}님, 1조원 입니다 이메일인증을 완료해주세요: ' \
                   f'http://127.0.0.1:8000/api/signup/verify-email/{token}/'
-        from_email = 'your_email@example.com'  # 이메일 설정에 맞게 변경
+        from_email = 'donghe1472@gmail.com'  # 이메일 설정에 맞게 변경
         to_email = user.email
         send_mail(subject, message, from_email, [to_email])
 

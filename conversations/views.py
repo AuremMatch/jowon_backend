@@ -34,10 +34,96 @@ class ConversationViewSet(ModelViewSet):
         graph = request.data.get('graph')  # 그래프 데이터 가져오기
         matching_type = request.data.get('matching_type')  # 매칭 유형을 요청 데이터에서 가져옴
         participants = request.data.get('participants')  # 참가자 데이터 가져오기
-       
 
         if not contest_id:
             return Response({'error': 'Contest ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        applicants = []
+
+        if matching_type in ['same', 'random']:
+            # Contest의 참가자 리스트를 가져오기 위해 HTTP 요청을 보냄
+            url = f'http://127.0.0.1:8000/contests/{contest_id}/applicants/'
+            response = requests.get(url)
+            if response.status_code != 200:
+                return Response({'error': 'Failed to fetch applicants.'}, status=response.status_code)
+
+            applicants = response.json()
+
+        if matching_type == 'same':
+            # 현재 사용자의 예측값 가져오기
+            current_user_id = request.user.id
+            my_prediction_value = None
+
+            for applicant in applicants:
+                if applicant.get('id') == current_user_id:
+                    my_prediction_value = applicant.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0)  # 예측값 설정
+                    break
+
+            if my_prediction_value is None:
+                return Response({'error': 'User prediction value not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 예측값을 기준으로 정렬
+            applicants.sort(key=lambda x: abs(x.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0) - my_prediction_value))
+
+            # 비슷한 예측값을 가진 사용자들을 3명씩 묶어서 여러 개의 팀 생성
+            created_conversations = []
+            for i in range(0, len(applicants), 3):
+                team = applicants[i:i + 3]
+                selected_user_ids = [user.get('id') for user in team]
+
+                data = request.data.copy()
+                if image_url:
+                    data['image'] = image_url
+                data['ai_response'] = team  # 선택된 사용자들의 예측값을 serializer에 추가
+                data['matching_type'] = matching_type  # matching_type을 data에 추가
+
+                serializer = self.get_serializer(data=data)
+                serializer.is_valid(raise_exception=True)
+                conversation = serializer.save()
+
+                conversation.participants.set(selected_user_ids)
+                conversation.save()
+
+                created_conversations.append(serializer.data)
+
+            headers = self.get_success_headers(serializer.data)
+
+            # 디버깅: 반환할 데이터를 출력
+            for conversation in created_conversations:
+                print("Response data:", conversation)
+                print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
+
+            return Response(created_conversations, status=status.HTTP_201_CREATED, headers=headers)
+
+        elif matching_type == 'random':
+            # 참가자 리스트를 무작위로 섞음
+            import random
+            random.shuffle(applicants)
+
+            # 참가자들을 4명씩 묶어서 한 팀 생성
+            team = applicants[:4]
+            selected_user_ids = [user.get('id') for user in team]
+
+            data = request.data.copy()
+            if image_url:
+                data['image'] = image_url
+            data['ai_response'] = team  # 선택된 사용자들의 예측값을 serializer에 추가
+            data['matching_type'] = matching_type  # matching_type을 data에 추가
+
+            serializer = self.get_serializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            conversation = serializer.save()
+
+            conversation.participants.set(selected_user_ids)
+            conversation.save()
+
+            headers = self.get_success_headers(serializer.data)
+
+            # 디버깅: 반환할 데이터를 출력
+            print("Response data:", serializer.data)
+            print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
         # `data`에 `image` URL과 기타 데이터를 추가하여 serializer에 전달
         data = request.data.copy()
@@ -73,6 +159,7 @@ class ConversationViewSet(ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Conversation.DoesNotExist:
             return Response({'error': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
+
 
 
 
