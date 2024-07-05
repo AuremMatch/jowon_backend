@@ -23,7 +23,7 @@ import random
 
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
-    queryset = Conversation.objects.all().order_by('-created')
+    queryset = Conversation.objects.all().order_by('-created')[:8]
     permission_classes = [AllowAny]
     pagination_class = None 
 
