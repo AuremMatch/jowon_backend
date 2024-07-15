@@ -24,7 +24,7 @@ import random
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all().order_by('-created')
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     pagination_class = None 
 
     def create(self, request, *args, **kwargs):
@@ -160,6 +160,12 @@ class ConversationViewSet(ModelViewSet):
         except Conversation.DoesNotExist:
             return Response({'error': 'Conversation not found.'}, status=status.HTTP_404_NOT_FOUND)
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my(self, request):
+        user = request.user
+        conversations = Conversation.objects.filter(participants=user).order_by('-created')
+        serializer = self.get_serializer(conversations, many=True)
+        return Response(serializer.data)
 
 
 

@@ -50,6 +50,11 @@ urlpatterns = [
     path('averages_result/', views.ScoreViewSet.as_view({
         'get': 'averages_result',
     }), name='averages-result'),
+
+    path('average_user/', views.ScoreViewSet.as_view({
+        'get': 'user_average_scores',
+    }), name='average'),
+    
     path(
         "<int:pk>",
         views.UserViewSet.as_view(
