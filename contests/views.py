@@ -77,6 +77,10 @@ class FilteredContests(APIView):
             # 상금이 숫자로만 이루어진 경우만 필터링하고 상금 크기순으로 정렬
             filtered_contests = all_contents.order_by('-상금')
 
+        # 최신순과 상금순을 동시에 필터링하는 경우
+        if latest_checked and prize_checked:
+            filtered_contests = filtered_contests.order_by('-상금', '-id')
+
         serializer = ContestSerializer(filtered_contests, many=True)
         return Response(serializer.data)
 

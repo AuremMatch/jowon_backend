@@ -261,19 +261,21 @@ class SignUpViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+             # 토큰 생성 및 저장
+            token, created = Token.objects.get_or_create(user=user)
             # 이메일 인증 메일 보내기
-            self.send_verification_email(user)
+            self.send_verification_email(user, token.key)
             return Response({"message": "User created successfully. Check your email for verification."},
                             status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def send_verification_email(self, user):
+    def send_verification_email(self, user, token):
         token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
         subject = 'Verify your email address'
-        message = f'안녕하세요 {user.username}님, 1조원 입니다 이메일인증을 완료해주세요: ' \
-                  f'http://127.0.0.1:8000/api/signup/verify-email/{token}/'
-        from_email = 'donghe1472@gmail.com'  # 이메일 설정에 맞게 변경
+        message = f'안녕하세요 {user.username}님, 이메일 인증을 완료해주세요: ' \
+                  f'http://127.0.0.1:8000/users/api/signup/verify-email/{token}/'
+        from_email = settings.DEFAULT_FROM_EMAIL  # 이메일 설정에 맞게 변경
         to_email = user.email
         send_mail(subject, message, from_email, [to_email])
 
@@ -286,17 +288,14 @@ class VerifyEmailView(APIView):
             user.is_email_verified = True
             user.save()
 
-            # 로그인 처리
-            user = authenticate(request, username=user.username, password=user.password)
-            if user is not None:
-                login(request, user)
-                # 이메일 인증 후 홈 화면으로 리다이렉트 또는 메시지 반환
-                return redirect('http://127.0.0.1:3000/')
-            else:
-                return Response({"error": "Authentication failed."}, status=status.HTTP_400_BAD_REQUEST)
-
-        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, User.DoesNotExist) as e:
-            return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+            # 이메일 인증 후 홈 화면으로 리다이렉트 또는 메시지 반환
+            return redirect('http://127.0.0.1:3000/')
+        except jwt.ExpiredSignatureError:
+            return Response({"error": "Expired token"}, status=status.HTTP_400_BAD_REQUEST)
+        except jwt.InvalidTokenError:
+            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+        except models.User.DoesNotExist:
+            return Response({"error": "User does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -525,4 +524,22 @@ class ScoreViewSet(ModelViewSet):
             avg_certificate_score=Avg('certificate_score')
         )
         return Response(avg_data)
-    
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def user_average_scores(self, request):
+        user_scores = models.Score.objects.filter(user=request.user).aggregate(
+            avg_grade=Avg('grade'),
+            avg_github_commit_count=Avg('github_commit_count'),
+            avg_baekjoon_score=Avg('baekjoon_score'),
+            avg_programmers_score=Avg('programmers_score'),
+            avg_certificate_count=Avg('certificate_count'),
+            avg_depart=Avg('depart'),
+            avg_courses_taken=Avg('courses_taken'),
+            avg_major_field=Avg('major_field'),
+            avg_bootcamp_experience=Avg('bootcamp_experience'),
+            avg_in_school_award_cnt=Avg('in_school_award_cnt'),
+            avg_out_school_award_cnt=Avg('out_school_award_cnt'),
+            avg_coding_test_score=Avg('coding_test_score'),
+            avg_certificate_score=Avg('certificate_score')
+        )
+        return Response(user_scores)
