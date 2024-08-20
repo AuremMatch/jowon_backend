@@ -543,3 +543,4 @@ class ScoreViewSet(ModelViewSet):
             avg_certificate_score=Avg('certificate_score')
         )
         return Response(user_scores)
+    

@@ -20,6 +20,7 @@ from contests.views import ContestViewSet
 from contests.models import Contest
 import requests
 import random
+from users.models import Coding
 
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
@@ -49,67 +50,48 @@ class ConversationViewSet(ModelViewSet):
 
             applicants = response.json()
 
-        if matching_type == 'same':
-            # 현재 사용자의 예측값 가져오기
-            current_user_id = request.user.id
-            my_prediction_value = None
+        if matching_type == 'random':
+            current_user = request.user
+            current_coding = get_object_or_404(Coding, user=current_user)
+            
+            # 모든 신청자들 중에서 현재 사용자를 제외한 사람들의 코딩 점수를 가져옵니다.
+            applicants = Coding.objects.filter(user__apply__id=contest_id).exclude(user=current_user)
 
-            for applicant in applicants:
-                if applicant.get('id') == current_user_id:
-                    my_prediction_value = applicant.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0)  # 예측값 설정
-                    break
+            # 현재 사용자의 각 항목별 점수 비교하여 가장 낮은 항목 두 개를 찾습니다.
+            score_diffs = {
+                "backend_score": current_coding.backend_score,
+                "frontend_score": current_coding.frontend_score,
+                "design_score": current_coding.design_score,
+                "deploy_score": current_coding.deploy_score,
+                "ppt_score": current_coding.ppt_score,
+            }
+            weakest_areas = sorted(score_diffs, key=score_diffs.get)[:2]  # 가장 낮은 두 항목을 선택
 
-            if my_prediction_value is None:
-                return Response({'error': 'User prediction value not found.'}, status=status.HTTP_400_BAD_REQUEST)
+            # 첫 번째 약점에 대해 높은 점수를 가진 팀원들 찾기 (슬라이싱 전에 필터링 수행)
+            best_matches_first = applicants.order_by(f'-{weakest_areas[0]}')[:2]
 
-            # 예측값을 기준으로 정렬
-            applicants.sort(key=lambda x: abs(x.get('predictions', {}).get('GCGF 혁신 아이디어 공모', 0) - my_prediction_value))
+            # 두 번째 약점에 대해 높은 점수를 가진 팀원들 찾기 (필터링 먼저 수행)
+            best_matches_second = applicants.exclude(user__in=[match.user for match in best_matches_first]).order_by(f'-{weakest_areas[1]}')[:1]
 
-            # 비슷한 예측값을 가진 사용자들을 3명씩 묶어서 여러 개의 팀 생성
-            created_conversations = []
-            for i in range(0, len(applicants), 3):
-                team = applicants[i:i + 3]
-                selected_user_ids = [user.get('id') for user in team]
+            # 최종적으로 매칭된 팀원들 (현재 사용자 + 3명)
+            final_matches = list(best_matches_first) + list(best_matches_second)
 
-                data = request.data.copy()
-                if image_url:
-                    data['image'] = image_url
-                data['ai_response'] = team  # 선택된 사용자들의 예측값을 serializer에 추가
-                data['matching_type'] = matching_type  # matching_type을 data에 추가
+            if len(final_matches) < 2:
+                return Response({'error': 'No suitable match found.'}, status=status.HTTP_404_NOT_FOUND)
 
-                serializer = self.get_serializer(data=data)
-                serializer.is_valid(raise_exception=True)
-                conversation = serializer.save()
+            # 매칭된 사용자의 코딩 점수 출력 (로그)
+            print(f"Current User: {current_user.username}, Weakest Areas: {weakest_areas}")
+            for area in weakest_areas:
+                print(f"Weak Area: {area}, Score: {score_diffs[area]}")
+            for match in final_matches:
+                print(f"Matched User: {match.user.username}, {weakest_areas[0]} Score: {getattr(match, weakest_areas[0])}, {weakest_areas[1]} Score: {getattr(match, weakest_areas[1])}")
 
-                conversation.participants.set(selected_user_ids)
-                conversation.save()
-
-                created_conversations.append(serializer.data)
-
-            headers = self.get_success_headers(serializer.data)
-
-            # 디버깅: 반환할 데이터를 출력
-            for conversation in created_conversations:
-                print("Response data:", conversation)
-                print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
-
-            return Response(created_conversations, status=status.HTTP_201_CREATED, headers=headers)
-
-        elif matching_type == 'random':
-            # 참가자 리스트를 무작위로 섞음
-            import random
-            random.shuffle(applicants)
-
-            # 참가자들을 4명씩 묶어서 한 팀 생성
-            team = applicants[:4]
-            selected_user_ids = [user.get('id') for user in team]
-
+            # 팀 매칭 결과를 저장하기 위해 데이터 준비
+            selected_user_ids = [current_user.id] + [match.user.id for match in final_matches]
             data = request.data.copy()
-            if image_url:
-                data['image'] = image_url
-            data['ai_response'] = team  # 선택된 사용자들의 예측값을 serializer에 추가
-            data['matching_type'] = matching_type  # matching_type을 data에 추가
+            data['participants'] = selected_user_ids  # 선택된 참가자들의 ID 설정
 
+            # 저장 및 응답
             serializer = self.get_serializer(data=data)
             serializer.is_valid(raise_exception=True)
             conversation = serializer.save()
@@ -119,11 +101,37 @@ class ConversationViewSet(ModelViewSet):
 
             headers = self.get_success_headers(serializer.data)
 
-            # 디버깅: 반환할 데이터를 출력
-            print("Response data:", serializer.data)
-            print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
-
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        # elif matching_type == 'random':
+        #     # 참가자 리스트를 무작위로 섞음
+        #     import random
+        #     random.shuffle(applicants)
+
+        #     # 참가자들을 4명씩 묶어서 한 팀 생성
+        #     team = applicants[:4]
+        #     selected_user_ids = [user.get('id') for user in team]
+
+        #     data = request.data.copy()
+        #     if image_url:
+        #         data['image'] = image_url
+        #     data['ai_response'] = team  # 선택된 사용자들의 예측값을 serializer에 추가
+        #     data['matching_type'] = matching_type  # matching_type을 data에 추가
+
+        #     serializer = self.get_serializer(data=data)
+        #     serializer.is_valid(raise_exception=True)
+        #     conversation = serializer.save()
+
+        #     conversation.participants.set(selected_user_ids)
+        #     conversation.save()
+
+        #     headers = self.get_success_headers(serializer.data)
+
+        #     # 디버깅: 반환할 데이터를 출력
+        #     print("Response data:", serializer.data)
+        #     print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
+
+        #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
         # `data`에 `image` URL과 기타 데이터를 추가하여 serializer에 전달
         data = request.data.copy()
