@@ -544,3 +544,46 @@ class ScoreViewSet(ModelViewSet):
         )
         return Response(user_scores)
     
+class CodingScoreViewSet(ModelViewSet):
+    queryset = models.Coding.objects.all()
+    serializer_class = serializers.CodingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        # pk가 주어졌을 경우, 해당 사용자의 코딩 점수를 반환
+        pk = self.kwargs.get('pk')
+        if pk:
+            try:
+                return models.Coding.objects.get(pk=pk)
+            except models.Coding.DoesNotExist:
+                raise NotFound("No coding scores found for this user.")
+        # pk가 없을 경우, 현재 로그인된 사용자의 코딩 점수를 반환
+        else:
+            try:
+                return models.Coding.objects.get(user=self.request.user)
+            except models.Coding.DoesNotExist:
+                raise NotFound("No coding scores found for the current user.")
+
+    def retrieve(self, request, pk=None):
+        coding = self.get_object()
+        serializer = serializers.CodingSerializer(coding)
+        return Response(serializer.data)
+
+    def update(self, request, pk=None):
+        coding = self.get_object()
+        serializer = serializers.CodingSerializer(coding, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def destroy(self, request, pk=None):
+        coding = self.get_object()
+        coding.delete()
+        return Response(status=204)
+
+    def list(self, request):
+        # 전체 사용자에 대한 코딩 점수를 조회합니다.
+        queryset = models.Coding.objects.all()
+        serializer = serializers.CodingSerializer(queryset, many=True)
+        return Response(serializer.data)

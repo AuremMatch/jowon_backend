@@ -63,4 +63,14 @@ urlpatterns = [
     path('api/auth/token/', obtain_auth_token, name='api_token_auth'),
     path('api/signup/verify-email/<str:token>/', views.VerifyEmailView.as_view(), name='verify-email'),
     path('', include(router.urls)),  # DefaultRouter 사용 시 포함
+       path('coding/', views.CodingScoreViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
+    }), name='codingscore-detail'),
+     path('coding-scores/<int:pk>/', views.CodingScoreViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'delete': 'destroy',
+    }), name='codingscore-detail'),
 ]
