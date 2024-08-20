@@ -154,13 +154,4 @@ class Coding(models.Model):
         return f"{self.user.username}'s Coding scores: Backend={self.backend_score}, Frontend={self.frontend_score}"
     
 
-    def save(self, *args, **kwargs):
-        if self.pk:  # 객체가 이미 존재하는 경우
-            original = Coding.objects.get(pk=self.pk)
-            if (original.backend_score != 0 or
-                original.frontend_score != 0 or
-                original.design_score != 0 or
-                original.deploy_score != 0 or
-                original.ppt_score != 0):
-                raise ValidationError("Scores can only be set once.")
-        super().save(*args, **kwargs)
+   

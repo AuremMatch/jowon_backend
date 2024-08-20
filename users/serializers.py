@@ -11,6 +11,13 @@ from django.core.mail import send_mail
 from django.conf import settings
 import jwt
 
+from .models import Coding
+
+class CodingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coding
+        fields = ['backend_score', 'frontend_score', 'design_score', 'deploy_score', 'ppt_score']
+
 
 class ScoreSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,6 +35,7 @@ class UserContestChoicesSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     score = ScoreSerializer(read_only=True)  # ScoreSerializer 추가
+    coding = CodingSerializer(read_only=True)
     choices_by_contest = serializers.SerializerMethodField()
 
     class Meta:
