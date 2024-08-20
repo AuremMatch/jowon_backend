@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models import TextChoices
 
 
+from django.core.exceptions import ValidationError
+
+
 class User(AbstractUser):
   
     이름 = models.CharField(max_length=100)  # 이름
@@ -137,3 +140,27 @@ class UserContestChoices(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     contest = models.ForeignKey("contests.Contest", on_delete=models.CASCADE)
     selected_choices = models.JSONField(default=list)
+
+
+class Coding(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)  # User와 연결
+    backend_score = models.IntegerField(default=0)
+    frontend_score = models.IntegerField(default=0)
+    design_score = models.IntegerField(default=0)
+    deploy_score = models.IntegerField(default=0)
+    ppt_score = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username}'s Coding scores: Backend={self.backend_score}, Frontend={self.frontend_score}"
+    
+
+    def save(self, *args, **kwargs):
+        if self.pk:  # 객체가 이미 존재하는 경우
+            original = Coding.objects.get(pk=self.pk)
+            if (original.backend_score != 0 or
+                original.frontend_score != 0 or
+                original.design_score != 0 or
+                original.deploy_score != 0 or
+                original.ppt_score != 0):
+                raise ValidationError("Scores can only be set once.")
+        super().save(*args, **kwargs)

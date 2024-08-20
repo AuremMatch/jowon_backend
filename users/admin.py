@@ -1,5 +1,10 @@
 from django.contrib import admin
-from .models import User, Score
+from .models import User, Score, Coding
+
+
+@admin.register(Coding)
+class CodingAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(User)

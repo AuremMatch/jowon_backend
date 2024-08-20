@@ -77,6 +77,10 @@ class FilteredContests(APIView):
             # 상금이 숫자로만 이루어진 경우만 필터링하고 상금 크기순으로 정렬
             filtered_contests = all_contents.order_by('-상금')
 
+        # 최신순과 상금순을 동시에 필터링하는 경우
+        if latest_checked and prize_checked:
+            filtered_contests = filtered_contests.order_by('-상금', '-id')
+
         serializer = ContestSerializer(filtered_contests, many=True)
         return Response(serializer.data)
 
@@ -131,6 +135,30 @@ class ContestViewSet(ModelViewSet):
     queryset = Contest.objects.all()
     serializer_class = ContestSerializer
     pagination_class = None  
+    @action(detail=True, methods=['get', 'post'])
+    def applicants(self, request, pk=None):
+        contest = self.get_object()
+        
+        if request.method == 'GET':
+            applicants = contest.apply.all()  # 역참조를 사용하여 신청한 유저들 가져오기
+            serializer = UserSerializer(applicants, many=True)
+            return Response(serializer.data)
+        
+        elif request.method == 'POST':
+            predictions = request.data  # 정렬된 데이터를 받음
+            
+            if not predictions:
+                return Response({'error': 'Predictions are required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+
+            # 정렬된 데이터를 기반으로 매칭 로직을 수행하거나 필요한 처리를 합니다.
+            # 예를 들어, 여기서는 단순히 데이터를 그대로 반환합니다.
+            # 실제 로직에 따라 데이터를 처리하거나 저장할 수 있습니다.
+            print("Received predictions: ", predictions)
+
+            return Response(predictions, status=status.HTTP_200_OK)
+
 
     def get_survey(self, request, pk=None):
         contest = get_object_or_404(Contest, pk=pk)
