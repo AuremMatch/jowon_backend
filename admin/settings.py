@@ -73,6 +73,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
+    "http://1jowon.s3-website.ap-northeast-2.amazonaws.com/",
     
 ]
 
