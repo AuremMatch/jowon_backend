@@ -26,11 +26,6 @@ from ratings.models import Rating
 from django.db.models import Avg
 from .serializers import PrivateUserSerializer
 
-
-import pandas as pd
-import numpy as np
-import tensorflow as tf
-from sklearn.preprocessing import StandardScaler
 from rest_framework.decorators import action
 from rest_framework.response import Response
 import jwt
@@ -166,26 +161,6 @@ class ApplyView(APIView):
 
         return Response(results)
 
-    
-    # def post(self, request):
-    #     # POST 요청 처리 코드
-    #     pk = request.data.get("pk", None)
-    #     user = request.user
-    #     if pk is not None:
-    #         try:
-    #             room = Contest.objects.get(pk=pk)
-    #             if room in user.favs.all():
-    #                 user.favs.remove(room)
-    #             else:
-    #                 user.favs.add(room)
-    #             return Response(status=status.HTTP_201_CREATED)
-    #         except Contest.DoesNotExist:
-    #             pass
-    #     return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
-
-        
 
 class PublicUser(APIView):
     def get(self, request, username):
@@ -249,8 +224,8 @@ class LogOut(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
-        logout(request)
+    def post(self):
+        logout(self.request)
         return Response({"ok": "bye!"})
     
 class SignUpViewSet(ModelViewSet):
@@ -340,147 +315,6 @@ class UpdateSelectedChoicesView(APIView):
         serializer = UserSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
-# 대회별 최대, 최소값 설정
-aptitude_test_max_min = {
-    '중대한 사회 안전 이니까': (48, 12),
-    '부산 도시브랜드 굿즈 디자인 공모전': (64, 16),
-    '인천건축학생공모전': (68, 17),
-    'GCGF 혁신 아이디어 공모': (40, 10),
-    '웹 개발 콘테스트': (64, 16)
-}
-
-# 독립 변수 최대값, 최소값 설정
-max_min = {
-    'out_school_award_cnt': (10, 0),
-    'in_school_award_cnt': (10, 0),
-    'certificate_score': (12, 0),
-    'certificate_count': (10, 0),
-    'major_field': (13, 0),
-    'depart': (3, 1),
-    'grade': (4.5, 1.0),
-    'senior': (4, 1),
-    'coding_test_score': (5, 0),
-    'courses_taken': (3, 1),  # 수정
-    'github_commit_count': (50, 1),  # 추가
-    'baekjoon_score': (12, 1),  # 추가
-    'programmers_score': (12, 1),  # 추가
-    'bootcamp_experience': (2, 1),  # 추가
-}
-
-
-# 모델과 스케일러를 전역 변수로 설정하여 재사용
-model = None
-scaler = None
-
-def load_model_and_scaler():
-    global model, scaler
-
-    # 모델 로드
-    model_path = os.path.join(settings.BASE_DIR, 'users', 'JongsulModel3.h5')
-    model = tf.keras.models.load_model(model_path)
-
-    # 데이터 로드 및 전처리
-    df = pd.read_excel('jongsulData3.xlsx')
-    X = df.drop(columns=list(aptitude_test_max_min.keys()))
-    y = df[list(aptitude_test_max_min.keys())]
-
-    # 스케일러 학습
-    scaler = StandardScaler()
-    scaler.fit(X)
-
-# 모델과 스케일러 로드
-load_model_and_scaler()
-
-# 새로운 학생 데이터 예측
-def predict_contest_winning_probabilities(new_student_data):
-    new_student_df = pd.DataFrame([new_student_data])
-    new_student_data_scaled = scaler.transform(new_student_df)
-    predictions = model.predict(new_student_data_scaled)[0]
-    
-    # 확률값을 0과 100 사이의 값으로 변환
-    predictions = np.clip(predictions, 0, 100)
-    
-    return {contest: prob for contest, prob in zip(aptitude_test_max_min.keys(), predictions)}
-
-class PredictAPIView(APIView):
-
-    def get(self, request):
-        scores = models.Score.objects.all()
-        serializer = serializers.ScoreSerializer(scores, many=True)
-        return Response(serializer.data)
-
-    def post(self, request):
-        student_data = request.data
-
-        # 데이터 검증
-        print("Received data:", student_data)
-
-        # 필드 매핑
-        column_mapping = {
-            'grade': 'grade',
-            'github_commit_count': 'github_commit_count',
-            'baekjoon_score': 'baekjoon_score',
-            'programmers_score': 'programmers_score',
-            'certificate_count': 'certificate_count',
-            'senior': 'senior',
-            'depart': 'depart',
-            'courses_taken': 'courses_taken',
-            'major_field': 'major_field',
-            'bootcamp_experience': 'bootcamp_experience',
-            'in_school_award_cnt': 'in_school_award_cnt',
-            'out_school_award_cnt': 'out_school_award_cnt',
-            'coding_test_score': 'coding_test_score',
-            'certificate_score': 'certificate_score',
-            'aptitude_test_score': 'aptitude_test_score',
-           
-        }
-
-        # 데이터프레임으로 변환
-        try:
-            new_student_df = pd.DataFrame([student_data])
-            print("DataFrame created successfully:")
-            print(new_student_df)
-        except ValueError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Score 모델에 맞게 필드명 수정 및 선택
-        new_student_df = new_student_df.rename(columns=column_mapping)
-        selected_columns = list(column_mapping.values())
-
-        # 필요한 열만 선택하여 정규화
-        try:
-            for col in selected_columns:
-                if col not in new_student_df:
-                    return Response({'error': f'Missing column: {col}'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 스케일링 전 데이터 확인
-            print("Data before scaling:")
-            print(new_student_df[selected_columns])
-
-            # 스케일링 적용 (스케일러를 사용하여 정규화)
-            X_scaled = scaler.transform(new_student_df[selected_columns])
-
-            # 스케일링 후 데이터 확인
-            print("Data scaled successfully:")
-            print(X_scaled)
-        except ValueError as e:
-            print("Error during scaling:")
-            print(e)
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 예측 수행 (로드된 모델 사용)
-        try:
-            predictions = predict_contest_winning_probabilities(new_student_df[selected_columns].to_dict(orient='records')[0])
-            print("Prediction successful:")
-            print(predictions)
-        except Exception as e:
-            print("Error during prediction:")
-            print(e)
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # 예측 결과 반환
-        return Response(predictions)
-
 
 class ScoreViewSet(ModelViewSet):
     queryset = models.Score.objects.all()

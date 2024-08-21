@@ -15,8 +15,8 @@ urlpatterns = [
     path("log-in", views.LogIn.as_view()),
     path("log-out", views.LogOut.as_view()),
     path('signup/', views.SignUpViewSet.as_view({'post': 'create'}), name='signup'),
-    path('students/', views.PredictAPIView.as_view(), name='student-list'),
-    path('students/predict/', views.PredictAPIView.as_view(), name='student-predict'),
+   
+  
     path("@<str:username>", views.PublicUser.as_view()),
     path(
         "",

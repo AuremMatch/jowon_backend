@@ -10,10 +10,11 @@ class Question(models.Model):
     survey = models.ForeignKey(Survey, related_name='questions', on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
     CHOICE_OPTIONS = [
-        (4, '매우 그렇다'),
-        (3, '그렇다'),
-        (2, '보통이다'),
-        (1, '아니다')
+        (5, '매우잘한다'),
+        (4, '잘한다'),
+        (3, '보통이다'),
+        (2, '조금 할줄안다'),
+        (1, '경험 해본적 없다')
     ]
     def __str__(self):
         return self.text

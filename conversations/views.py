@@ -27,11 +27,34 @@ class ConversationViewSet(ModelViewSet):
     queryset = Conversation.objects.all().order_by('-created')
     permission_classes = [IsAuthenticated]
     pagination_class = None 
+    # 추가: update 메서드를 오버라이드하여 participants를 추가
+    def update(self, request, *args, **kwargs):
+        # 기존 대화 객체를 가져옴
+        conversation = self.get_object()
+
+        # 요청 데이터에서 participants 가져오기
+        new_participants = request.data.get('participants', [])
+
+        if not isinstance(new_participants, list):
+            return Response({'error': 'Participants should be a list.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 기존 참가자 가져오기
+        current_participants = list(conversation.participants.all().values_list('id', flat=True))
+
+        # 중복되지 않게 새로운 참가자 추가
+        updated_participants = list(set(current_participants + new_participants))
+
+        # 참가자 업데이트
+        conversation.participants.set(updated_participants)
+        conversation.save()
+
+        serializer = self.get_serializer(conversation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         contest_id = request.data.get('contest_id')
         image_url = request.data.get('image')
-        ai_response = request.data.get('ai_response')  # AI 응답 데이터 가져오기
+       
         graph = request.data.get('graph')  # 그래프 데이터 가져오기
         matching_type = request.data.get('matching_type')  # 매칭 유형을 요청 데이터에서 가져옴
         participants = request.data.get('participants')  # 참가자 데이터 가져오기
@@ -137,8 +160,7 @@ class ConversationViewSet(ModelViewSet):
         data = request.data.copy()
         if image_url:
             data['image'] = image_url
-        if ai_response:
-            data['ai_response'] = ai_response  # 요청 데이터에서 직접 ai_response를 추가
+       
         if graph:
             data['graph'] = graph  # 요청 데이터에서 직접 graph를 추가
 
@@ -155,7 +177,7 @@ class ConversationViewSet(ModelViewSet):
 
         # 디버깅: 반환할 데이터를 출력
         print("Response data:", serializer.data)
-        print("AI Response data:", data['ai_response'])  # 추가된 디버깅 코드
+        
 
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 

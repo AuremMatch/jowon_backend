@@ -90,13 +90,14 @@ class PrivateUserSerializer(serializers.ModelSerializer):
    
     notifications = serializers.SerializerMethodField()
     score = ScoreSerializer(read_only=True)  # ScoreSerializer 추가
+    coding = CodingSerializer(read_only=True)
 
     class Meta:
         model = User
         exclude = (
             "password",
             "is_superuser",
-            "id",
+         
             "is_staff",
             "is_active",
             "groups",
