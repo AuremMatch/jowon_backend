@@ -33,6 +33,7 @@ ALLOWED_HOSTS = [os.environ.get('DJANGO_ALLOWED_HOSTS', '*')]
 # Application definition
 
 DJANGO_APPS = [
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -73,8 +74,10 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True
 
+
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
+    'http://localhost:3000',
     
 ]
 

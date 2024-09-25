@@ -70,7 +70,7 @@ class FavsView(APIView):
 
     def get(self, request):
         user = request.user
-        serializer = ContestSerializer(user.favs.all(), many=True).data
+        serializer = ContestSerializer(user.favs.all().order_by('-updated'), many=True).data
         return Response(serializer)
 
     def put(self, request):
