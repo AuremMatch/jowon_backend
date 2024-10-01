@@ -185,3 +185,6 @@ EMAIL_FROM = "sssss@sandbox67029800135e4f9eac7b8688a7bbd8c5.mailgun.org"
 EMAIL_HOST_USER = 'donghe1472@gmail.com'
 EMAIL_HOST_PASSWORD = 'ofpq aywz oftn ipgs'
 EMAIL_USE_TLS = True
+
+# # CSRF 보호 비활성화 (JWT 사용 시)
+# CSRF_COOKIE_SECURE = False

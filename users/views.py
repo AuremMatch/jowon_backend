@@ -25,6 +25,7 @@ from contests.models import Contest
 from ratings.models import Rating
 from django.db.models import Avg
 from .serializers import PrivateUserSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -33,6 +34,7 @@ from django.shortcuts import get_object_or_404
 
 from . import serializers
 from rest_framework import generics
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserViewSet(ModelViewSet):
 
@@ -193,15 +195,25 @@ class LogIn(APIView):
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
+        email = request.data.get("email")
+
         if not username or not password:
-            raise ParseError
+            return Response({"error": "username and password required"}, status=400)
+
         user = authenticate(
             request,
             username=username,
             password=password,
         )
+
         if user:
-            login(request, user)
+            login(request, user)  # Django의 로그인 함수 호출
+
+            # JWT 토큰 발급
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            # 사용자 정보 및 JWT 토큰 반환
             return Response({
                 "id": user.id,
                 "이름": user.이름,
@@ -213,11 +225,10 @@ class LogIn(APIView):
                 "개발경력": user.개발경력,
                 "깃주소": user.깃주소,
                 "포토폴리오링크": user.포토폴리오링크,
-                
-                # 필요한 다른 사용자 데이터 추가
-            })
+                "token": access_token,  # 발급된 JWT 토큰
+            }, status=status.HTTP_200_OK)
         else:
-            return Response({"error": "wrong password"})
+            return Response({"error": "wrong username or password"}, status=400)
 
 
 class LogOut(APIView):
@@ -234,43 +245,56 @@ class SignUpViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        
+        # 유효성 검사
         if serializer.is_valid():
+            # 사용자 생성
             user = serializer.save()
-             # 토큰 생성 및 저장
+            
+            # 토큰 생성 및 저장
             token, created = Token.objects.get_or_create(user=user)
+
             # 이메일 인증 메일 보내기
             self.send_verification_email(user, token.key)
-            return Response({"message": "User created successfully. Check your email for verification."},
-                            status=status.HTTP_201_CREATED)
+            
+            return Response({
+                "message": "User created successfully. Check your email for verification."
+            }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def send_verification_email(self, user, token):
+        # 토큰을 포함한 이메일 전송 로직
         token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
         subject = 'Verify your email address'
         message = f'안녕하세요 {user.username}님, 이메일 인증을 완료해주세요: ' \
                   f'http://127.0.0.1:8000/users/api/signup/verify-email/{token}/'
         from_email = settings.DEFAULT_FROM_EMAIL  # 이메일 설정에 맞게 변경
         to_email = user.email
+        
         send_mail(subject, message, from_email, [to_email])
 
 class VerifyEmailView(APIView):
-    def get(self, request, token):
+    def get(self, request, token, *args, **kwargs):
         try:
-            decoded = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-            user_id = decoded['user_id']
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            user_id = payload.get('user_id')
             user = models.User.objects.get(id=user_id)
-            user.is_email_verified = True
-            user.save()
 
-            # 이메일 인증 후 홈 화면으로 리다이렉트 또는 메시지 반환
-            return redirect('http://127.0.0.1:3000/')
+            if not user.is_active:
+                user.is_active = True
+                user.save()
+
+            # 사용자 인증이 완료되면 JWT 토큰 생성
+            refresh = RefreshToken.for_user(user)
+
+            # 프론트엔드로 리디렉션하면서 JWT 토큰 전달
+            return redirect(f'http://127.0.0.1:3000/verify-email?token={refresh.access_token}')
+
         except jwt.ExpiredSignatureError:
-            return Response({"error": "Expired token"}, status=status.HTTP_400_BAD_REQUEST)
-        except jwt.InvalidTokenError:
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-        except models.User.DoesNotExist:
-            return Response({"error": "User does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Activation link has expired."}, status=status.HTTP_400_BAD_REQUEST)
+        except jwt.DecodeError:
+            return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

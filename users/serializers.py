@@ -57,20 +57,18 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class SignUpSerializer(serializers.ModelSerializer):
-    학교 = serializers.CharField(write_only=True, required=True)
+   
     class Meta:
         model = User
-        fields = ['username', 'password', 'email', '학교']
+        fields = ['username', 'password', 'email']
         extra_kwargs = {'password': {'write_only': True}}  # password 필드를 읽기 전용으로 설정합니다.
 
     def create(self, validated_data):
-        학교 = validated_data.pop('학교')
-       
+        # create_user로 자동으로 암호화라..
         user = User.objects.create_user(
             username=validated_data['username'],
             password=validated_data['password'],
             email=validated_data['email'],
-            학교=학교,
             is_active=False  # 계정을 비활성화 상태로 생성
         )
   
