@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_simplejwt.authentication import JWTAuthentication  # JWT 인증 추가
 import os  # os 모듈 import 추가
 from django.core.mail import send_mail
 from django.conf import settings
@@ -69,6 +70,7 @@ class Me(APIView):
 class FavsView(APIView):
 
     permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]  # JWT 인증 클래스 추가
 
     def get(self, request):
         user = request.user
@@ -251,12 +253,12 @@ class SignUpViewSet(ModelViewSet):
             # 사용자 생성
             user = serializer.save()
             
-            # 토큰 생성 및 저장
-            token, created = Token.objects.get_or_create(user=user)
+            # JWT 토큰 생성
+            token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
 
             # 이메일 인증 메일 보내기
-            self.send_verification_email(user, token.key)
-            
+            self.send_verification_email(user, token)
+
             return Response({
                 "message": "User created successfully. Check your email for verification."
             }, status=status.HTTP_201_CREATED)
@@ -264,8 +266,6 @@ class SignUpViewSet(ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def send_verification_email(self, user, token):
-        # 토큰을 포함한 이메일 전송 로직
-        token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
         subject = 'Verify your email address'
         message = f'안녕하세요 {user.username}님, 이메일 인증을 완료해주세요: ' \
                   f'http://127.0.0.1:8000/users/api/signup/verify-email/{token}/'
@@ -277,28 +277,33 @@ class SignUpViewSet(ModelViewSet):
 class VerifyEmailView(APIView):
     def get(self, request, token, *args, **kwargs):
         try:
+            # 토큰 출력
+            print(f"Received token: {token}")
+            
+            # 받은 토큰을 디코딩하여 사용자 확인
             payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+            print(f"Decoded payload: {payload}")
+
             user_id = payload.get('user_id')
             user = models.User.objects.get(id=user_id)
+            print(f"User: {user}")
 
             if not user.is_active:
                 user.is_active = True
                 user.save()
 
-            # 사용자 인증이 완료되면 JWT 토큰 생성
             refresh = RefreshToken.for_user(user)
-
-            # 프론트엔드로 리디렉션하면서 JWT 토큰 전달
-            return redirect(f'http://127.0.0.1:3000/verify-email?token={refresh.access_token}')
+            access_token = str(refresh.access_token)
+            # 프론트엔드로 리디렉션하며 토큰을 URL 파라미터로 전달
+            return redirect(f'http://127.0.0.1:3000/?token={access_token}')
 
         except jwt.ExpiredSignatureError:
             return Response({"error": "Activation link has expired."}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.DecodeError:
+            print("Invalid token")
             return Response({"error": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-
+            
 class UpdateSelectedChoicesView(APIView):
     permission_classes = [IsAuthenticated]
 

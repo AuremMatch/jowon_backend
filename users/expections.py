@@ -1,0 +1,2 @@
+class NoSignUpTokenExists(Expection):
+    pass
