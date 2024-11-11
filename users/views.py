@@ -70,7 +70,7 @@ class Me(APIView):
 class FavsView(APIView):
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]  # JWT 인증 클래스 추가
+    
 
     def get(self, request):
         user = request.user
@@ -252,13 +252,10 @@ class SignUpViewSet(ModelViewSet):
         if serializer.is_valid():
             # 사용자 생성
             user = serializer.save()
-            
             # JWT 토큰 생성
             token = jwt.encode({"user_id": user.id}, settings.SECRET_KEY, algorithm='HS256')
-
             # 이메일 인증 메일 보내기
             self.send_verification_email(user, token)
-
             return Response({
                 "message": "User created successfully. Check your email for verification."
             }, status=status.HTTP_201_CREATED)
@@ -295,7 +292,7 @@ class VerifyEmailView(APIView):
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
             # 프론트엔드로 리디렉션하며 토큰을 URL 파라미터로 전달
-            return redirect(f'http://127.0.0.1:3000/?token={access_token}')
+            return redirect(f'http://127.0.0.1:3000/verify-email?token={access_token}')
 
         except jwt.ExpiredSignatureError:
             return Response({"error": "Activation link has expired."}, status=status.HTTP_400_BAD_REQUEST)

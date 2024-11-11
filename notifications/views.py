@@ -41,6 +41,9 @@ class NotificationViewSet(viewsets.ModelViewSet):
         image = request.data.get('image')  # 이미지 필드 추가
         
         conversation_id = request.data.get('conversation_id')  # conversation_id 필드 추가
+
+        # conversation_id 출력
+        print("Conversation ID:", conversation_id)
         
         # 필수 필드가 있는지 확인
         if not message:
@@ -54,6 +57,8 @@ class NotificationViewSet(viewsets.ModelViewSet):
         
          # 연결된 Conversation 설정
         conversation = get_object_or_404(Conversation, id=conversation_id)
+
+         
 
         # Notification 객체 생성
         notification = Notification.objects.create(user=user, message=message, image=image,  conversation=conversation )

@@ -26,8 +26,8 @@ class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
     queryset = Conversation.objects.all().order_by('-created')
     permission_classes = [IsAuthenticated]
-    pagination_class = None 
-    # 추가: update 메서드를 오버라이드하여 participants를 추가
+    pagination_class = None
+
     def update(self, request, *args, **kwargs):
         # 기존 대화 객체를 가져옴
         conversation = self.get_object()
@@ -46,6 +46,51 @@ class ConversationViewSet(ModelViewSet):
 
         # 참가자 업데이트
         conversation.participants.set(updated_participants)
+        conversation.save()
+
+        serializer = self.get_serializer(conversation)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+      # 대기 중인 팀원을 추가하는 메서드
+    @action(detail=True, methods=["get","post"])
+    def add_pending_participant(self, request, pk=None):
+        conversation = self.get_object()
+
+        if request.method == "GET":
+            # GET 요청: 대기 중인 팀원의 목록 조회
+            pending_participants = conversation.pendingParticipants.all()
+            serializer = self.serializer_class(pending_participants, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        elif request.method == "POST":
+            # POST 요청: 대기 중인 팀원 추가
+            user_id = request.data.get('user_id')
+            if not user_id:
+                return Response({'error': 'User ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            if user_id in conversation.pendingParticipants.values_list('id', flat=True):
+                return Response({'message': 'User is already in pending participants.'}, status=status.HTTP_200_OK)
+
+            conversation.pendingParticipants.add(user_id)
+            conversation.save()
+
+            serializer = self.get_serializer(conversation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # 대기 중인 팀원을 수락하여 정식 참가자로 추가하는 메서드
+    @action(detail=True, methods=["get","post"])
+    def accept_pending_participant(self, request, pk=None):
+        conversation = self.get_object()
+        user_id = request.data.get('user_id')
+
+        if not user_id:
+            return Response({'error': 'User ID is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user_id not in conversation.pendingParticipants.values_list('id', flat=True):
+            return Response({'error': 'User is not in pending participants.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 대기 중인 팀원에서 제거하고 정식 참가자로 추가
+        conversation.pendingParticipants.remove(user_id)
+        conversation.participants.add(user_id)
         conversation.save()
 
         serializer = self.get_serializer(conversation)

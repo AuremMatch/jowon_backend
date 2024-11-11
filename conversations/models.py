@@ -16,6 +16,8 @@ class Conversation(core_models.TimeStampedModel):
     
     participants = models.ManyToManyField("users.User", blank=True)
 
+    pendingParticipants = models.ManyToManyField("users.User", related_name="pending_conversations", blank=True)  # 추가된 필드
+
     selected_choices = models.JSONField(default=list, blank=True)  # JSON 필드 추가
 
     image = models.URLField(max_length=1000,null=True)  # 사진 (URL 형식)
