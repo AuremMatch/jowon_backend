@@ -30,10 +30,12 @@ class ConversationViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         # 기존 대화 객체를 가져옴
+        
         conversation = self.get_object()
 
         # 요청 데이터에서 participants 가져오기
         new_participants = request.data.get('participants', [])
+        contest_id = request.data.get('contest_id')
 
         if not isinstance(new_participants, list):
             return Response({'error': 'Participants should be a list.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -46,6 +48,10 @@ class ConversationViewSet(ModelViewSet):
 
         # 참가자 업데이트
         conversation.participants.set(updated_participants)
+         # contest_id가 제공된 경우 conversation에 추가
+        if contest_id is not None:
+            conversation.contest_id = contest_id
+
         conversation.save()
 
         serializer = self.get_serializer(conversation)

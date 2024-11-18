@@ -17,6 +17,7 @@ class ConversationSerializer(serializers.ModelSerializer):
     participants = UserSerializer(many=True, read_only=True)
     pendingParticipants = UserSerializer(many=True, read_only=True)  # pendingParticipants를 UserSerializer로 직렬화
     messages = MessageSerializer(many=True, read_only=True)
+
     
     class Meta:
         model = Conversation

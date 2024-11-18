@@ -152,11 +152,7 @@ class ContestViewSet(ModelViewSet):
             
             
 
-            # 정렬된 데이터를 기반으로 매칭 로직을 수행하거나 필요한 처리를 합니다.
-            # 예를 들어, 여기서는 단순히 데이터를 그대로 반환합니다.
-            # 실제 로직에 따라 데이터를 처리하거나 저장할 수 있습니다.
-            print("Received predictions: ", predictions)
-
+         
             return Response(predictions, status=status.HTTP_200_OK)
 
 

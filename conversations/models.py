@@ -22,6 +22,8 @@ class Conversation(core_models.TimeStampedModel):
 
     image = models.URLField(max_length=1000,null=True)  # 사진 (URL 형식)
 
+    contest_id = models.CharField(max_length=2, null=True, blank=True);
+
     주최 = models.CharField(max_length=200, blank=True) 
     응모분야 = models.CharField(max_length=200, blank=True) 
     참가대상 = models.CharField(max_length=200, blank=True) 
