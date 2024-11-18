@@ -9,4 +9,4 @@ class ProposalSerializer(serializers.ModelSerializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'user', 'message', 'created_at', 'is_read', 'image', 'conversation']
+        fields = ['id', 'user','receiver', 'message', 'created_at', 'is_read', 'image', 'conversation']

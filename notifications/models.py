@@ -9,6 +9,7 @@ class Proposal(models.Model):
 
 class Notification(core_models.TimeStampedModel):
     user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name='notifications')
+    receiver = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="notifications_received", null=True, blank=True)  # 새로 추가된 필드
     image = models.URLField(null=True)  # 사진 (URL 형식)
     message = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
