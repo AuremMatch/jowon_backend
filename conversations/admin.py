@@ -9,6 +9,13 @@ class MessageAdmin(admin.ModelAdmin):
 
     pass
 
+@admin.register(models.Portfolio)
+class PortofolioAdmin(admin.ModelAdmin):
+
+    """ Message Admin Definition """
+
+    pass
+
 
 @admin.register(models.Conversation)
 class ConversationAdmin(admin.ModelAdmin):

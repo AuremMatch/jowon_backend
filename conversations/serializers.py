@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Conversation, Message
 from users.serializers import UserSerializer
 from users.models import User
+from .models import Portfolio
 
 
 
@@ -28,3 +29,10 @@ class PendingParticipantSerializer(serializers.ModelSerializer):
     class Meta:
         model = User  # 적절한 사용자 모델로 교체
         fields = ["이름", "학번"]  # 필요한 필드 포함
+
+
+
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =  Portfolio
+        fields = '__all__'

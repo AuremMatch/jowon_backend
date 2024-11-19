@@ -21,6 +21,9 @@ from contests.models import Contest
 import requests
 import random
 from users.models import Coding
+from .serializers import ConversationSerializer
+from .serializers import PortfolioSerializer
+from .models import Portfolio
 
 class ConversationViewSet(ModelViewSet):
     serializer_class = ConversationSerializer
@@ -56,6 +59,46 @@ class ConversationViewSet(ModelViewSet):
 
         serializer = self.get_serializer(conversation)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post', 'get'])
+    def add_portfolio(self, request, pk=None):
+        # 특정 Conversation 객체 가져오기
+        conversation = self.get_object()
+
+        if request.method == 'POST':
+            # 요청 데이터 가져오기
+            title = request.data.get('title')
+            description = request.data.get('description', '')
+            image = request.data.get('image', None)
+            document = request.FILES.get('document', None)
+            link = request.data.get('link', None)
+
+            # Portfolio 객체 생성 및 Conversation에 연결
+            portfolio = Portfolio.objects.create(
+                title=title,
+                description=description,
+                image=image,
+                document=document,
+                link=link
+            )
+                # Many-to-Many 관계에 포트폴리오 추가
+            conversation.portfolio.add(portfolio)  # .add()를 사용하여 추가
+
+            # 응답 반환
+            portfolio_serializer = PortfolioSerializer(portfolio)
+            return Response(portfolio_serializer.data, status=status.HTTP_201_CREATED)
+
+        elif request.method == 'GET':
+            # Conversation에 연결된 모든 Portfolio 정보 반환
+            portfolios = conversation.portfolio.all()  # .all()로 모든 객체 가져오기
+            if portfolios.exists():
+                portfolio_serializer = PortfolioSerializer(portfolios, many=True)
+                return Response(portfolio_serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(
+                    {"error": "No Portfolios found for this Conversation."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
       # 대기 중인 팀원을 추가하는 메서드
     @action(detail=True, methods=["get","post"])
