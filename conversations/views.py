@@ -37,20 +37,20 @@ class ConversationViewSet(ModelViewSet):
         conversation = self.get_object()
 
         # 요청 데이터에서 participants 가져오기
-        new_participants = request.data.get('participants', [])
+        new_participants = request.data.get('pendingParticipants', [])
         contest_id = request.data.get('contest_id')
 
         if not isinstance(new_participants, list):
             return Response({'error': 'Participants should be a list.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 기존 참가자 가져오기
-        current_participants = list(conversation.participants.all().values_list('id', flat=True))
+        current_participants = list(conversation.pendingParticipants.all().values_list('id', flat=True))
 
         # 중복되지 않게 새로운 참가자 추가
         updated_participants = list(set(current_participants + new_participants))
 
         # 참가자 업데이트
-        conversation.participants.set(updated_participants)
+        conversation.pendingParticipants.set(updated_participants)
          # contest_id가 제공된 경우 conversation에 추가
         if contest_id is not None:
             conversation.contest_id = contest_id
