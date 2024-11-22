@@ -14,3 +14,12 @@ class Rating(core_models.TimeStampedModel):
 
     def __str__(self):
         return f'{self.rater} rated {self.ratee} - {self.overall_score}'
+    
+
+class Evaluation(core_models.TimeStampedModel):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='evaluations')
+    target_user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='received_evaluations')
+    comment = models.TextField()
+
+    def __str__(self):
+        return f"{self.user} evaluated {self.target_user} - {self.comment[:20]}..."

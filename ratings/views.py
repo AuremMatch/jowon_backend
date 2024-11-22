@@ -5,7 +5,10 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Rating
 from .serializers import RatingSerializer
+from .serializers import EvaluationSerializer
 from rest_framework.permissions import IsAuthenticated
+from .models import Evaluation
+from users.models import User
 
 class RatingViewSet(viewsets.ModelViewSet):
     queryset = Rating.objects.all()
@@ -56,3 +59,65 @@ class RatingViewSet(viewsets.ModelViewSet):
         serializer.save(rater=request.user, ratee_id=ratee_id, activity_score=activity_score, accuracy_score=accuracy_score, teamwork_score=teamwork_score, overall_score=overall_score)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class EvaluationViewSet(viewsets.ModelViewSet):
+    queryset = Evaluation.objects.all()
+    serializer_class = EvaluationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        # 요청 데이터에서 target_user와 comment 가져오기
+        target_user_id = request.data.get('target_user')
+        comment = request.data.get('comment')
+
+        # 필수 필드 검증
+        if not target_user_id or not comment:
+            return Response(
+                {"error": "Both target_user and comment fields are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # target_user_id를 숫자로 변환
+        try:
+            target_user_id = int(target_user_id)
+        except (ValueError, TypeError):
+            return Response(
+                {"error": f"Invalid target_user value: {target_user_id}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # self 평가 방지
+        if request.user.id == target_user_id:
+            return Response(
+                {"error": "You cannot evaluate yourself."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # target_user를 User 객체로 검색
+        try:
+            target_user = User.objects.get(pk=target_user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": f"User with ID {target_user_id} does not exist."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 기존 평가 여부 확인
+        existing_evaluation = Evaluation.objects.filter(
+            user=request.user,
+            target_user=target_user
+        ).first()
+
+        if existing_evaluation:
+            # 기존 평가 업데이트
+            existing_evaluation.comment = comment
+            existing_evaluation.save()
+            serializer = self.get_serializer(existing_evaluation)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # 새로운 평가 생성
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, target_user=target_user, comment=comment)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
