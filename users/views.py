@@ -1,6 +1,7 @@
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
+import logging
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -193,6 +194,10 @@ class ChangePassword(APIView):
         else:
             raise ParseError
         
+# 로거 생성
+logger = logging.getLogger(__name__)
+
+        
 class LogIn(APIView):
     def post(self, request):
         username = request.data.get("username")
@@ -214,6 +219,10 @@ class LogIn(APIView):
             # JWT 토큰 발급
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
+
+            # 로그 출력
+            logger.info(f"JWT 토큰 발급 성공 - 사용자: {user.username}, 토큰: {access_token}")
+
 
             # 사용자 정보 및 JWT 토큰 반환
             return Response({
