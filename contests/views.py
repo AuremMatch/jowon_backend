@@ -167,3 +167,26 @@ class ContestViewSet(ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+
+class ContentsSearchView(APIView):
+    permission_classes = [IsAuthenticated]  # 인증된 사용자만 접근 가능
+
+    def get(self, request):
+        # 검색 키워드 가져오기
+        query = request.query_params.get("q", None)
+        user = request.user
+
+        if query:
+            # 검색 키워드로 Contest 필터링
+            contests = Contest.objects.filter(
+                title__icontains=query  # title 필드에서 검색어 포함 여부 확인
+            ).order_by("-updated")
+        else:
+            # 검색 키워드가 없으면 빈 결과 반환
+            contests = Contest.objects.none()
+
+        # 결과를 직렬화하여 반환
+        serializer = ContestSerializer(contests, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

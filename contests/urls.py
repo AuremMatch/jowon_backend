@@ -66,4 +66,6 @@ urlpatterns = [
 
     path('<int:pk>/create_conversation/', views.ContestViewSet.as_view({'post': 'create_conversation'}), name='contest-create-conversation'),
     path('<int:pk>/survey/', views.ContestViewSet.as_view({'get': 'get_survey'}), name='contest-survey'),
+
+    path('search/', views.ContentsSearchView.as_view(), name='contents-search'),
 ]
